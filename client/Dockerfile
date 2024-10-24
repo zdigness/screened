@@ -1,17 +1,20 @@
-# Dockerfile for React Frontend
-FROM node:18 AS build
+# Development stage for React with HMR
+FROM node:18 AS development
 
 WORKDIR /app
 
+# Copy the package.json and package-lock.json files
 COPY package*.json ./
+
+# Install dependencies
 RUN npm install
 
+# Copy the rest of your application code
 COPY . .
 
-RUN npm run build
+# Expose the Vite development server port
+EXPOSE 5173
 
-# Serve the app with Nginx
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+# Command to start the development server with HMR
+CMD ["npm", "run", "dev"]
+
