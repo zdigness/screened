@@ -6,7 +6,7 @@ const db = require('../models/db');
 router.get('/today', async (req, res) => {
 	try {
 		const result = await db.query(
-			'SELECT * FROM movies WHERE release_date = CURRENT_DATE LIMIT 1'
+			'SELECT * FROM movies WHERE game_date = CURRENT_DATE LIMIT 1'
 		);
 		if (result.rows.length > 0) {
 			res.json(result.rows[0]);
@@ -15,6 +15,18 @@ router.get('/today', async (req, res) => {
 		}
 	} catch (err) {
 		console.error("Error fetching today's game:", err);
+		res.status(500).json({ error: 'Database error' });
+	}
+});
+
+// Endpoint to get all movie names
+router.get('/', async (req, res) => {
+	try {
+		const result = await db.query('SELECT name FROM movies');
+		const movieNames = result.rows.map((row) => row.name);
+		res.json(movieNames);
+	} catch (err) {
+		console.error('Error fetching movie names:', err);
 		res.status(500).json({ error: 'Database error' });
 	}
 });

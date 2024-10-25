@@ -1,5 +1,5 @@
-title,director,average_rating,top_reviewer,top_review_rating,top_review_text,release_date
-Inception,Christopher Nolan,4.2,ksenija,4.5,christopher nolan spent years writing this movie's complex plot and really named the main character dom cobb,2024-10-23
-Get Out,Jordan Peele,4.2,mememily,4.5,"my favorite commentary that I've read about this movie was from Rian Johnson who said ""I love that if the movie Get Out existed in the world of Get Out, the parents would have told Chris how much they loved Get Out""",2024-10-24
-Joker,Todd Phillips,3.8,Joao,1.0,if you’ve never swam in the ocean then of course a pool seems deep.,2024-10-25
-Barbie,Greta Gerwig,3.8,bimbim,5.0,s(he's) bro(ken),2024-10-26
+title,director,genre,average_rating,top_reviewer,top_review_rating,top_review_text,release_date
+Inception,Christopher Nolan,science fiction,4.2,ksenija,4.5,christopher nolan spent years writing this movie's complex plot and really named the main character dom cobb,2024-10-23
+Get Out,Jordan Peele,horror,4.2,mememily,4.5,"my favorite commentary that I've read about this movie was from Rian Johnson who said ""I love that if the movie Get Out existed in the world of Get Out, the parents would have told Chris how much they loved Get Out""",2024-10-24
+Joker,Todd Phillips,crime,3.8,Joao,1.0,if you’ve never swam in the ocean then of course a pool seems deep.,2024-10-25
+Barbie,Greta Gerwig,comedy,3.8,bimbim,5.0,s(he's) bro(ken),2024-10-26
