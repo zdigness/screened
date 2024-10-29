@@ -1,21 +1,37 @@
 import { useState, useEffect } from 'react';
-import './App.css'; // Ensure Tailwind is included
+import './App.css'; // Ensure Tailwind and custom CSS are included
 
 function App() {
 	const [movie, setMovie] = useState(null);
 	const [error, setError] = useState(null);
 	const [answer, setAnswer] = useState('');
-	const [message, setMessage] = useState('');
 	const [allMovies, setAllMovies] = useState([]);
 	const [filteredMovies, setFilteredMovies] = useState([]);
-	const [guessedMovieData, setGuessedMovieData] = useState(null); // Store data for guessed movie
-	const [correctMovieData, setCorrectMovieData] = useState(null); // Store data for correct movie
+	const [guesses, setGuesses] = useState(1);
+	const [guessRows, setGuessRows] = useState([null, null, null, null]);
+	const [flipStatus, setFlipStatus] = useState({}); // Track flip animations
+	const [correctMovieData, setCorrectMovieData] = useState({
+		genre: null,
+		rating: null,
+		director: null,
+		title: null,
+	}); // Store data for the correct movie
 
 	useEffect(() => {
 		// Fetch today's movie
 		fetch('http://localhost:5000/api/movies/today')
 			.then((response) => response.json())
-			.then((data) => setMovie(data))
+			.then((data) => {
+				setMovie(data);
+				setCorrectMovieData({
+					genre:
+						data.genre.charAt(0).toUpperCase() +
+						data.genre.slice(1).toLowerCase(),
+					rating: data.average_rating,
+					director: data.director,
+					title: data.name,
+				});
+			})
 			.catch((error) => {
 				console.error("Error fetching today's movie:", error);
 				setError("Error fetching today's game");
@@ -70,14 +86,37 @@ function App() {
 		})
 			.then((response) => response.json())
 			.then((data) => {
-				setMessage(data.message);
-				setGuessedMovieData(data.guessedMovie); // Set the guessed movie data for display
-				setCorrectMovieData(data.correctMovie); // Set the correct movie data for display
 				setAnswer(''); // Clear the input field
+
+				// Temporary row data to update cell by cell with a delay
+				const rowData = {
+					genre:
+						data.guessedMovie.genre.charAt(0).toUpperCase() +
+						data.guessedMovie.genre.slice(1).toLowerCase(),
+					rating: data.guessedMovie.average_rating,
+					director: data.guessedMovie.director,
+					title: data.guessedMovie.name,
+				};
+
+				const updatedGuessRows = [...guessRows];
+				const newFlipStatus = { ...flipStatus };
+
+				// Function to update each cell with a delay
+				Object.keys(rowData).forEach((col, colIndex) => {
+					setTimeout(() => {
+						updatedGuessRows[guesses - 1] = {
+							...updatedGuessRows[guesses - 1],
+							[col]: rowData[col],
+						};
+						newFlipStatus[`${guesses - 1}-${col}`] = true;
+						setFlipStatus({ ...newFlipStatus });
+						setGuessRows([...updatedGuessRows]);
+					}, colIndex * 500);
+				});
+				setGuesses(guesses + 1); // Move to the next guess after all cells are updated
 			})
 			.catch((error) => {
 				console.error('Error submitting answer:', error);
-				setMessage('Error submitting your answer');
 			});
 	};
 
@@ -107,11 +146,11 @@ function App() {
 
 			<div className='w-full max-w-lg relative flex flex-col items-center'>
 				<input
+					className='w-full p-2 border border-gray-300 rounded mb-0'
 					type='text'
 					value={answer}
 					onChange={handleInputChange}
-					placeholder='Guess Today’s Movie'
-					className='w-full p-2 border border-gray-300 rounded mb-0'
+					placeholder={'Guess Today’s Movie ' + '																' + guesses + '/4'}
 				/>
 				{filteredMovies.length > 0 && (
 					<ul className='w-full max-h-48 border border-gray-300 rounded bg-white shadow-lg z-10 absolute left-0 top-full mt-1 overflow-y-auto'>
@@ -131,48 +170,40 @@ function App() {
 			<table className='w-full mt-10 border-separate border-spacing-x-2'>
 				<thead>
 					<tr className=''>
-						<td className='w-1/4 p-4  border border-gray-400 rounded-l-lg'>
-							Title
+						<td className='w-1/4 p-4 border border-gray-400 rounded-l-lg'>
+							Genre
 						</td>
+						<td className='w-1/4 p-4 border border-gray-400'>Rating</td>
 						<td className='w-1/4 p-4 border border-gray-400'>Director</td>
-						<td className='w-1/4 p-4 border border-gray-400'>Genre</td>
 						<td className='w-1/4 p-4 border border-gray-400 rounded-r-lg'>
-							Rating
+							Title
 						</td>
 					</tr>
 				</thead>
 			</table>
 
 			<table className='w-full mt-6 border-separate border-spacing-x-1 border-spacing-y-2'>
-				<thead>
-					<tr className=''>
-						<td className='h-10 p-4 bg-white border-gray-200 rounded-l-lg'></td>
-						<td className='h-10 p-4 bg-white border-gray-200'></td>
-						<td className='h-10 p-4 bg-white border-gray-200'></td>
-						<td className='h-10 p-4 bg-white border-gray-200 rounded-r-lg'></td>
-					</tr>
-					<tr className=''>
-						<th className='h-10 p-4 bg-white border-gray-200 rounded-l-lg'></th>
-						<th className='h-10 p-4 bg-white border-gray-200'></th>
-						<th className='h-10 p-4 bg-white border-gray-200'></th>
-						<th className='h-10 p-4 bg-white border-gray-200 rounded-r-lg'></th>
-					</tr>
-					<tr className=''>
-						<th className='h-10 p-4 bg-white border-gray-200 rounded-l-lg'></th>
-						<th className='h-10 p-4 bg-white border-gray-200'></th>
-						<th className='h-10 p-4 bg-white border-gray-200'></th>
-						<th className='h-10 p-4 bg-white border-gray-200 rounded-r-lg'></th>
-					</tr>
-					<tr className=''>
-						<th className='h-10 p-4 bg-white border-gray-200 rounded-l-lg'></th>
-						<th className='h-10 p-4 bg-white border-gray-200'></th>
-						<th className='h-10 p-4 bg-white border-gray-200'></th>
-						<th className='h-10 p-4 bg-white border-gray-200 rounded-r-lg'></th>
-					</tr>
-				</thead>
+				<tbody>
+					{guessRows.map((row, rowIndex) => (
+						<tr key={rowIndex}>
+							{['genre', 'rating', 'director', 'title'].map((col, colIndex) => (
+								<td
+									key={colIndex}
+									className={`w-1/4 h-12 p-4 border-gray-200 rounded-lg text-black ${
+										row &&
+										correctMovieData &&
+										row[col] === correctMovieData[col]
+											? 'bg-green-500'
+											: 'bg-white'
+									} ${flipStatus[`${rowIndex}-${col}`] ? 'flip' : ''}`}
+								>
+									{row ? row[col] : ''}
+								</td>
+							))}
+						</tr>
+					))}
+				</tbody>
 			</table>
-
-			{message && <p className='mt-4 text-green-500'>{message}</p>}
 		</div>
 	);
 }

@@ -4,35 +4,31 @@ const router = express.Router();
 const db = require('../models/db');
 
 router.post('/submit-answer', async (req, res) => {
-	const guessedMovie = req.body.answer;
+	const guessedMovieName = req.body.answer;
 
 	try {
 		// Query for the movie details in the database based on the guessed name
 		const movieResult = await db.query(
 			'SELECT * FROM movies WHERE name = $1 LIMIT 1',
-			[guessedMovie]
+			[guessedMovieName]
 		);
 
-		// grab todays movie from the database
-		const todayMovie = await db.query(
+		// Query today's movie from the database
+		const todayMovieResult = await db.query(
 			'SELECT * FROM movies WHERE game_date = $1',
 			[new Date().toISOString().split('T')[0]]
 		);
 
 		if (movieResult.rows.length > 0) {
-			const guessedMovie = movieResult.rows[0];
-			const correctMovie = todayMovie.rows[0];
+			const guessedMovie = movieResult.rows[0]; // Access the first row
+			const correctMovie = todayMovieResult.rows[0]; // Access today's movie row
 
-			// if guess is correct then return the movie details
-			// else return a message that the guess is incorrect
-
-			// Check if the guessed movie is today's game
-			const isCorrect =
-				guessedMovie.release_date === new Date().toISOString().split('T')[0];
+			// Check if the guessed movie matches today's game by comparing names or other criteria
+			const isCorrect = guessedMovie.name === correctMovie.name;
 
 			return res.json({
 				correct: isCorrect,
-				message: isCorrect ? 'Correct guess!' : 'Incorrect guess',
+				message: isCorrect ? 'Correct guess!' : 'Incorrect guess, try again.',
 				guessedMovie: guessedMovie,
 				correctMovie: correctMovie,
 			});
