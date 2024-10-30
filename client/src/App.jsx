@@ -7,18 +7,86 @@ function App() {
 	const [answer, setAnswer] = useState('');
 	const [allMovies, setAllMovies] = useState([]);
 	const [filteredMovies, setFilteredMovies] = useState([]);
-	const [guesses, setGuesses] = useState(1);
-	const [guessRows, setGuessRows] = useState([null, null, null, null]);
-	const [flipStatus, setFlipStatus] = useState({}); // Track flip animations
+	const [guesses, setGuesses] = useState(() => {
+		const savedState = JSON.parse(localStorage.getItem('gameState'));
+		return savedState?.guesses || 1;
+	});
+	const [guessRows, setGuessRows] = useState(() => {
+		const savedState = JSON.parse(localStorage.getItem('gameState'));
+		return savedState?.guessRows || [null, null, null, null];
+	});
+	const [flipStatus, setFlipStatus] = useState({});
 	const [correctMovieData, setCorrectMovieData] = useState({
 		genre: null,
 		rating: null,
 		director: null,
 		title: null,
-	}); // Store data for the correct movie
+	});
+	const [correctGuess, setCorrectGuess] = useState(() => {
+		const savedCorrectGuess = JSON.parse(localStorage.getItem('correctGuess'));
+		return savedCorrectGuess || false;
+	});
+	const [outOfGuesses, setOutOfGuesses] = useState(() => {
+		const savedOutOfGuesses = JSON.parse(localStorage.getItem('outOfGuesses'));
+		return savedOutOfGuesses || false;
+	});
+	const [guessBoxMessage, setGuessBoxMessage] = useState("Guess Today's Movie");
+	const [isModalActive, setIsModalActive] = useState(false);
+	const [isCorrectModalActive, setIsCorrectModalActive] = useState(false);
+	const [isStreakModalActive, setIsStreakModalActive] = useState(false);
+	const [streak, setStreak] = useState(() => {
+		const savedStreak = JSON.parse(localStorage.getItem('streakData'));
+		return savedStreak?.streak || 0;
+	});
 
 	useEffect(() => {
-		// Fetch today's movie
+		const todayDate = new Date().toISOString().split('T')[0];
+		const savedDate = localStorage.getItem('gameDate');
+		const streakData = JSON.parse(localStorage.getItem('streakData')) || {
+			streak: 0,
+			lastWinDate: null,
+		};
+		// Reset streak if today is a new day and the user didn't play yesterday
+		if (streakData.lastWinDate && streakData.lastWinDate !== todayDate) {
+			const yesterday = new Date();
+			yesterday.setDate(yesterday.getDate() - 1);
+			const yesterdayDate = yesterday.toISOString().split('T')[0];
+
+			if (streakData.lastWinDate !== yesterdayDate) {
+				setStreak(0); // Reset streak to 0
+				localStorage.setItem(
+					'streakData',
+					JSON.stringify({ streak: 0, lastWinDate: todayDate })
+				);
+			}
+		}
+
+		// disable text input if correct guess is true
+		const savedCorrectGuess = JSON.parse(localStorage.getItem('correctGuess'));
+		if (savedCorrectGuess) {
+			setGuessBoxMessage('Correct! 🎉				');
+			setCorrectGuess(true);
+		}
+
+		// disable text input if out of guesses is true
+		const savedOutOfGuesses = JSON.parse(localStorage.getItem('outOfGuesses'));
+		if (savedOutOfGuesses) {
+			setGuessBoxMessage('Out of guesses, try again tomorrow!');
+			setOutOfGuesses(true);
+		}
+
+		// Continue with existing date check for new day or loading saved game
+		if (savedDate !== todayDate) {
+			localStorage.clear();
+		} else {
+			const savedGameState = JSON.parse(localStorage.getItem('gameState'));
+			if (savedGameState) {
+				setGuesses(savedGameState.guesses);
+				setGuessRows(savedGameState.guessRows);
+				setCorrectGuess(savedGameState.correctGuess);
+			}
+		}
+
 		fetch('http://localhost:5000/api/movies/today')
 			.then((response) => response.json())
 			.then((data) => {
@@ -31,18 +99,49 @@ function App() {
 					director: data.director,
 					title: data.name,
 				});
+				localStorage.setItem('gameDate', todayDate);
 			})
 			.catch((error) => {
 				console.error("Error fetching today's movie:", error);
 				setError("Error fetching today's game");
 			});
 
-		// Fetch all movie names for the autocomplete feature
 		fetch('http://localhost:5000/api/movies')
 			.then((response) => response.json())
 			.then((data) => setAllMovies(data))
 			.catch((error) => console.error('Error fetching all movies:', error));
 	}, []);
+
+	useEffect(() => {
+		const gameState = {
+			guesses,
+			guessRows,
+			correctGuess,
+		};
+		localStorage.setItem('gameState', JSON.stringify(gameState));
+
+		// Update streak only if it's correct or reset streak if they lost
+		const streakData = JSON.parse(localStorage.getItem('streakData')) || {
+			streak: 0,
+			lastWinDate: null,
+		};
+		const today = new Date().toISOString().split('T')[0];
+
+		if (correctGuess && streakData.lastWinDate !== today) {
+			const newStreak = streak + 1;
+			setStreak(newStreak);
+			localStorage.setItem(
+				'streakData',
+				JSON.stringify({ streak: newStreak, lastWinDate: today })
+			);
+		} else if (guesses === 4 && !correctGuess) {
+			setStreak(0);
+			localStorage.setItem(
+				'streakData',
+				JSON.stringify({ streak: 0, lastWinDate: null })
+			);
+		}
+	}, [guesses, guessRows, correctGuess, streak]);
 
 	const getStarRating = (rating) => {
 		const fullStars = Math.floor(rating);
@@ -86,9 +185,8 @@ function App() {
 		})
 			.then((response) => response.json())
 			.then((data) => {
-				setAnswer(''); // Clear the input field
+				setAnswer('');
 
-				// Temporary row data to update cell by cell with a delay
 				const rowData = {
 					genre:
 						data.guessedMovie.genre.charAt(0).toUpperCase() +
@@ -101,7 +199,6 @@ function App() {
 				const updatedGuessRows = [...guessRows];
 				const newFlipStatus = { ...flipStatus };
 
-				// Function to update each cell with a delay
 				Object.keys(rowData).forEach((col, colIndex) => {
 					setTimeout(() => {
 						updatedGuessRows[guesses - 1] = {
@@ -113,20 +210,183 @@ function App() {
 						setGuessRows([...updatedGuessRows]);
 					}, colIndex * 500);
 				});
-				setGuesses(guesses + 1); // Move to the next guess after all cells are updated
+
+				setTimeout(() => {
+					if (data.message === 'Correct guess!') {
+						setCorrectGuess(true);
+						setGuessBoxMessage('Correct! 🎉				');
+						localStorage.setItem('correctGuess', JSON.stringify(true));
+					} else if (guesses === 4) {
+						setOutOfGuesses(true);
+						setGuessBoxMessage('Out of guesses, try again tomorrow!');
+						localStorage.setItem('outOfGuesses', JSON.stringify(true));
+					} else {
+						setGuesses(guesses + 1);
+					}
+				}, Object.keys(rowData).length * 600);
+
+				setTimeout(() => {
+					if (data.message === 'Correct guess!') {
+						setIsCorrectModalActive(true);
+					}
+				}, 2500);
 			})
 			.catch((error) => {
 				console.error('Error submitting answer:', error);
 			});
 	};
 
+	const toggleModal = () => {
+		setIsModalActive(!isModalActive);
+	};
+
+	const toggleStreakModal = () => {
+		setIsStreakModalActive(!isStreakModalActive);
+	};
+
+	const closeCorrectModal = () => {
+		setIsCorrectModalActive(false);
+	};
+
 	return (
 		<div className='flex flex-col items-center justify-center'>
-			<div className='absolute top-20 w-full text-center mt-4'>
-				<h2 className='text-4xl font-light text-yellow-500'>{todayDate}</h2>
+			<div className='absolute top-20 w-full text-center mt-4 flex justify-center items-center'>
+				<h2 className='text-4xl font-light text-yellow-500 ml-16'>
+					{todayDate}
+				</h2>
+				<button
+					className='ml-10 text-2xl text-black bg-white rounded-xl pr-5 pl-5 pt-3 pb-3'
+					onClick={toggleModal}
+					aria-label='Information about the game'
+				>
+					?
+				</button>
+				<button
+					className='ml-2 text-2xl text-black bg-white rounded-xl pr-3 pl-3 pt-3 pb-3'
+					onClick={toggleStreakModal}
+					aria-label='Streak Counter'
+				>
+					🔥
+				</button>
 			</div>
 
-			<div className='max-w-3xl p-6 font-sans text-center bg-white rounded-lg shadow-md mt-16 mb-8'>
+			{isStreakModalActive && (
+				<div className={`modal ${isStreakModalActive ? 'is-active' : ''}`}>
+					<div className='modal-background' onClick={toggleStreakModal}></div>
+					<div className='modal-content'>
+						<div className='box p-6'>
+							<div className='text-2xl font-semibold mb-4'>Streak Counter</div>
+							<p className='text-lg'>
+								You have a streak of <span>{streak}</span> correct guesses!
+							</p>
+						</div>
+					</div>
+					<button
+						className='modal-close is-large'
+						onClick={toggleStreakModal}
+						aria-label='close'
+					></button>
+				</div>
+			)}
+
+			{isModalActive && (
+				<div className={`modal ${isModalActive ? 'is-active' : ''}`}>
+					<div className='modal-background' onClick={toggleModal}></div>
+					<div className='modal-content'>
+						<div className='box p-6'>
+							<div className='text-2xl font-semibold mb-4'>How to Play</div>
+
+							{/* Genre Section */}
+							<div className='text-left text-lg font-medium mb-2'>Genre</div>
+							<ul className='space-y-2'>
+								<li className='flex items-center gap-2'>
+									<div className='w-2 h-2 bg-black rounded-full'></div>
+									<p>
+										If the movie shares all the same genres, the tile will be{' '}
+										<span className='text-green-500 font-semibold'>green</span>.
+									</p>
+								</li>
+								<li className='flex items-center gap-2'>
+									<div className='w-2 h-2 bg-black rounded-full'></div>
+									<p>
+										If the movie shares at least one genres, the tile will be{' '}
+										<span className='text-yellow-300 font-semibold'>
+											yellow
+										</span>
+										.
+									</p>
+								</li>
+							</ul>
+
+							{/* Director Section */}
+							<div className='text-left text-lg font-medium mt-4 mb-2'>
+								Director
+							</div>
+							<ul className='space-y-2'>
+								<li className='flex items-center gap-2'>
+									<div className='w-2 h-2 bg-black rounded-full'></div>
+									<p>
+										If the movie has the same director, the tile will be{' '}
+										<span className='text-green-500 font-semibold'>green</span>.
+									</p>
+								</li>
+							</ul>
+
+							{/* Average Rating Section */}
+							<div className='text-left text-lg font-medium mt-4 mb-2'>
+								Average Rating
+							</div>
+							<ul className='space-y-2'>
+								<li className='flex items-center gap-2'>
+									<div className='w-2 h-2 bg-black rounded-full'></div>
+									<p>
+										If the movie has the same average rating, the tile will be{' '}
+										<span className='text-green-500 font-semibold'>green</span>.
+									</p>
+								</li>
+								<li className='flex items-center gap-2'>
+									<div className='w-2 h-2 bg-black rounded-full'></div>
+									<p>
+										If the average rating is within 0.2, the tile will be{' '}
+										<span className='text-yellow-300 font-semibold'>
+											yellow
+										</span>
+										.
+									</p>
+								</li>
+							</ul>
+						</div>
+					</div>
+					<button
+						className='modal-close is-large'
+						onClick={toggleModal}
+						aria-label='close'
+					></button>
+				</div>
+			)}
+
+			{isCorrectModalActive && (
+				<div className={`modal ${isCorrectModalActive ? 'is-active' : ''}`}>
+					<div className='modal-background' onClick={closeCorrectModal}></div>
+					<div className='modal-content'>
+						<div className='box p-6'>
+							<div className='text-2xl font-semibold mb-4'>
+								Congratulations!
+							</div>
+							<p className='text-lg'>
+								You guessed the movie correctly! You can try again tomorrow.
+							</p>
+						</div>
+					</div>
+					<button
+						className='modal-close is-large'
+						onClick={closeCorrectModal}
+						aria-label='close'
+					></button>
+				</div>
+			)}
+
+			<div className='max-w-3xl pl-10 pr-10 pt-4 pb-2 font-sans text-center bg-white rounded-lg shadow-md mt-16 mb-8'>
 				{error && <p className='text-red-500'>{error}</p>}
 				{movie ? (
 					<div>
@@ -146,11 +406,12 @@ function App() {
 
 			<div className='w-full max-w-lg relative flex flex-col items-center'>
 				<input
-					className='w-full p-2 border border-gray-300 rounded mb-0'
+					className='w-full p-2 border border-gray-300 rounded mb-0 text-white'
 					type='text'
 					value={answer}
 					onChange={handleInputChange}
-					placeholder={'Guess Today’s Movie ' + '																' + guesses + '/4'}
+					placeholder={`${guessBoxMessage}` + '																		' + guesses + '/4'}
+					disabled={correctGuess || outOfGuesses} // Disable input if correct guess is true
 				/>
 				{filteredMovies.length > 0 && (
 					<ul className='w-full max-h-48 border border-gray-300 rounded bg-white shadow-lg z-10 absolute left-0 top-full mt-1 overflow-y-auto'>
@@ -167,7 +428,7 @@ function App() {
 				)}
 			</div>
 
-			<table className='w-full mt-10 border-separate border-spacing-x-2'>
+			<table className='w-full mt-10 border-separate border-spacing-x-2 text-gray-300'>
 				<thead>
 					<tr className=''>
 						<td className='w-1/4 p-4 border border-gray-400 rounded-l-lg'>
@@ -186,20 +447,29 @@ function App() {
 				<tbody>
 					{guessRows.map((row, rowIndex) => (
 						<tr key={rowIndex}>
-							{['genre', 'rating', 'director', 'title'].map((col, colIndex) => (
-								<td
-									key={colIndex}
-									className={`w-1/4 h-12 p-4 border-gray-200 rounded-lg text-black ${
-										row &&
-										correctMovieData &&
-										row[col] === correctMovieData[col]
-											? 'bg-green-500'
-											: 'bg-white'
-									} ${flipStatus[`${rowIndex}-${col}`] ? 'flip' : ''}`}
-								>
-									{row ? row[col] : ''}
-								</td>
-							))}
+							{['genre', 'rating', 'director', 'title'].map((col, colIndex) => {
+								let bgColor = 'bg-white';
+								if (row && correctMovieData) {
+									if (row[col] === correctMovieData[col]) {
+										bgColor = 'bg-green-500';
+									} else if (
+										col === 'rating' &&
+										Math.abs(row[col] - correctMovieData.rating) <= 0.2
+									) {
+										bgColor = 'bg-yellow-300';
+									}
+								}
+								return (
+									<td
+										key={colIndex}
+										className={`w-1/4 h-14 p-4 border-gray-200 rounded-lg text-black ${bgColor} ${
+											flipStatus[`${rowIndex}-${col}`] ? 'flip' : ''
+										}`}
+									>
+										{row ? row[col] : ''}
+									</td>
+								);
+							})}
 						</tr>
 					))}
 				</tbody>
