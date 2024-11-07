@@ -22,14 +22,8 @@ function App() {
 		director: null,
 		title: null,
 	});
-	const [correctGuess, setCorrectGuess] = useState(() => {
-		const savedCorrectGuess = JSON.parse(localStorage.getItem('correctGuess'));
-		return savedCorrectGuess || false;
-	});
-	const [outOfGuesses, setOutOfGuesses] = useState(() => {
-		const savedOutOfGuesses = JSON.parse(localStorage.getItem('outOfGuesses'));
-		return savedOutOfGuesses || false;
-	});
+	const [correctGuess, setCorrectGuess] = useState(false);
+	const [outOfGuesses, setOutOfGuesses] = useState(false);
 	const [guessBoxMessage, setGuessBoxMessage] = useState("Guess Today's Movie");
 	const [isModalActive, setIsModalActive] = useState(false);
 	const [isCorrectModalActive, setIsCorrectModalActive] = useState(false);
@@ -40,50 +34,36 @@ function App() {
 	});
 
 	useEffect(() => {
-		const todayDate = new Date().toISOString().split('T')[0];
-		const savedDate = localStorage.getItem('gameDate');
-		const streakData = JSON.parse(localStorage.getItem('streakData')) || {
-			streak: 0,
-			lastWinDate: null,
-		};
-		// Reset streak if today is a new day and the user didn't play yesterday
-		if (streakData.lastWinDate && streakData.lastWinDate !== todayDate) {
-			const yesterday = new Date();
-			yesterday.setDate(yesterday.getDate() - 1);
-			const yesterdayDate = yesterday.toISOString().split('T')[0];
+		const todayDate = getMSTDateString();
+		const lastPlayDate = localStorage.getItem('lastPlayDate');
 
-			if (streakData.lastWinDate !== yesterdayDate) {
-				setStreak(0); // Reset streak to 0
-				localStorage.setItem(
-					'streakData',
-					JSON.stringify({ streak: 0, lastWinDate: todayDate })
-				);
-			}
-		}
-
-		// disable text input if correct guess is true
-		const savedCorrectGuess = JSON.parse(localStorage.getItem('correctGuess'));
-		if (savedCorrectGuess) {
-			setGuessBoxMessage('Correct! 🎉				');
-			setCorrectGuess(true);
-		}
-
-		// disable text input if out of guesses is true
-		const savedOutOfGuesses = JSON.parse(localStorage.getItem('outOfGuesses'));
-		if (savedOutOfGuesses) {
-			setGuessBoxMessage('Out of guesses, try again tomorrow!');
-			setOutOfGuesses(true);
-		}
-
-		// Continue with existing date check for new day or loading saved game
-		if (savedDate !== todayDate) {
-			localStorage.clear();
+		// Check if it's a new day
+		if (lastPlayDate !== todayDate) {
+			// Clear only the game-related keys
+			localStorage.removeItem('gameState');
+			setGuesses(1);
+			localStorage.removeItem('correctGuess');
+			setCorrectGuess(false);
+			localStorage.removeItem('outOfGuesses');
+			setOutOfGuesses(false);
+			setGuessRows([null, null, null, null]);
+			// Set the new game date
+			localStorage.setItem('lastPlayDate', todayDate); // Update last play date to today
 		} else {
-			const savedGameState = JSON.parse(localStorage.getItem('gameState'));
-			if (savedGameState) {
-				setGuesses(savedGameState.guesses);
-				setGuessRows(savedGameState.guessRows);
-				setCorrectGuess(savedGameState.correctGuess);
+			// Restore any saved state for `correctGuess` or `outOfGuesses`
+			const savedCorrectGuess = JSON.parse(
+				localStorage.getItem('correctGuess')
+			);
+			if (savedCorrectGuess) {
+				setGuessBoxMessage('Correct! 🎉');
+				setCorrectGuess(true);
+			}
+			const savedOutOfGuesses = JSON.parse(
+				localStorage.getItem('outOfGuesses')
+			);
+			if (savedOutOfGuesses) {
+				setGuessBoxMessage('Out of guesses, try again tomorrow!');
+				setOutOfGuesses(true);
 			}
 		}
 
@@ -99,7 +79,6 @@ function App() {
 					director: data.director,
 					title: data.name,
 				});
-				localStorage.setItem('gameDate', todayDate);
 			})
 			.catch((error) => {
 				console.error("Error fetching today's movie:", error);
@@ -113,34 +92,36 @@ function App() {
 	}, []);
 
 	useEffect(() => {
-		const gameState = {
-			guesses,
-			guessRows,
-			correctGuess,
-		};
-		localStorage.setItem('gameState', JSON.stringify(gameState));
+		// add a timeout to prevent the state from being updated too quickly
+		setTimeout(() => {
+			const gameState = {
+				guesses,
+				guessRows,
+				correctGuess,
+			};
+			localStorage.setItem('gameState', JSON.stringify(gameState));
 
-		// Update streak only if it's correct or reset streak if they lost
-		const streakData = JSON.parse(localStorage.getItem('streakData')) || {
-			streak: 0,
-			lastWinDate: null,
-		};
-		const today = new Date().toISOString().split('T')[0];
+			const streakData = JSON.parse(localStorage.getItem('streakData')) || {
+				streak: 0,
+				lastWinDate: null,
+			};
+			const today = getMSTDateString();
 
-		if (correctGuess && streakData.lastWinDate !== today) {
-			const newStreak = streak + 1;
-			setStreak(newStreak);
-			localStorage.setItem(
-				'streakData',
-				JSON.stringify({ streak: newStreak, lastWinDate: today })
-			);
-		} else if (guesses === 4 && !correctGuess) {
-			setStreak(0);
-			localStorage.setItem(
-				'streakData',
-				JSON.stringify({ streak: 0, lastWinDate: null })
-			);
-		}
+			if (correctGuess && streakData.lastWinDate !== today) {
+				const newStreak = streak + 1;
+				setStreak(newStreak);
+				localStorage.setItem(
+					'streakData',
+					JSON.stringify({ streak: newStreak, lastWinDate: today })
+				);
+			} else if (guesses === 4 && !correctGuess) {
+				setStreak(0);
+				localStorage.setItem(
+					'streakData',
+					JSON.stringify({ streak: 0, lastWinDate: null })
+				);
+			}
+		}, 500);
 	}, [guesses, guessRows, correctGuess, streak]);
 
 	const getStarRating = (rating) => {
@@ -214,7 +195,7 @@ function App() {
 				setTimeout(() => {
 					if (data.message === 'Correct guess!') {
 						setCorrectGuess(true);
-						setGuessBoxMessage('Correct! 🎉				');
+						setGuessBoxMessage('Correct! 🎉');
 						localStorage.setItem('correctGuess', JSON.stringify(true));
 					} else if (guesses === 4) {
 						setOutOfGuesses(true);
@@ -248,10 +229,19 @@ function App() {
 		setIsCorrectModalActive(false);
 	};
 
+	function getMSTDateString() {
+		const date = new Date();
+		const offsetMST = -7; // MST is UTC-7
+		date.setHours(date.getHours() + offsetMST); // Adjust by -7 hours
+
+		// Format to 'YYYY-MM-DD'
+		return date.toISOString().split('T')[0];
+	}
+
 	return (
 		<div className='flex flex-col items-center justify-center'>
-			<div className='absolute top-20 w-full text-center mt-4 flex justify-center items-center'>
-				<h2 className='text-4xl font-light text-yellow-500 ml-16'>
+			<div className=' w-full text-center mt-4 flex justify-center items-center'>
+				<h2 className='text-3xl font-light text-yellow-500 ml-10 text-center'>
 					{todayDate}
 				</h2>
 				<button
@@ -386,7 +376,7 @@ function App() {
 				</div>
 			)}
 
-			<div className='max-w-3xl pl-10 pr-10 pt-4 pb-2 font-sans text-center bg-white rounded-lg shadow-md mt-16 mb-8'>
+			<div className='max-w-3xl pl-10 pr-10 pt-4 pb-2 font-sans text-center bg-white rounded-lg shadow-md mt-16 mb-8 min-w-80'>
 				{error && <p className='text-red-500'>{error}</p>}
 				{movie ? (
 					<div>
@@ -406,11 +396,11 @@ function App() {
 
 			<div className='w-full max-w-lg relative flex flex-col items-center'>
 				<input
-					className='w-full p-2 border border-gray-300 rounded mb-0 text-white'
+					className='w-full p-2 border border-gray-300 rounded mb-0 text-white min-w-80'
 					type='text'
 					value={answer}
 					onChange={handleInputChange}
-					placeholder={`${guessBoxMessage}` + '																		' + guesses + '/4'}
+					placeholder={`${guessBoxMessage}`}
 					disabled={correctGuess || outOfGuesses} // Disable input if correct guess is true
 				/>
 				{filteredMovies.length > 0 && (
@@ -462,7 +452,7 @@ function App() {
 								return (
 									<td
 										key={colIndex}
-										className={`w-1/4 h-14 p-4 border-gray-200 rounded-lg text-black ${bgColor} ${
+										className={`w-1/4 h-14 p-4 border-gray-200 rounded-lg text-black min-w-20 ${bgColor} ${
 											flipStatus[`${rowIndex}-${col}`] ? 'flip' : ''
 										}`}
 									>
