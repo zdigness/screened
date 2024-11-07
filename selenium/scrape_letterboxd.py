@@ -14,13 +14,10 @@ driver = webdriver.Chrome(
     service=Service(ChromeDriverManager().install()), options=options
 )
 
-# List of movie URLs to scrape
-movies = [
-    {"title": "Inception", "url": "https://letterboxd.com/film/inception/"},
-    {"title": "Get Out", "url": "https://letterboxd.com/film/get-out-2017/"},
-    {"title": "Joker", "url": "https://letterboxd.com/film/joker-2019/"},
-    {"title": "Barbie", "url": "https://letterboxd.com/film/barbie/"},
-]
+# Read the CSV file into a DataFrame
+movies_df = pd.read_csv("popular_films.csv")
+# Convert the DataFrame into a list of dictionaries
+movies = movies_df.to_dict(orient="records")
 
 # List to store scraped data
 movie_data = []
@@ -37,7 +34,7 @@ def scrape_movie(movie, release_date):
         "director": None,
         "average_rating": None,
         "top_reviewer": None,
-        "top_review_rating": None,
+        "top_review_rating": 0,  # Default rating to 0 in case it's missing
         "top_review_text": None,
         "release_date": release_date.strftime("%Y-%m-%d"),  # Format date as a string
     }
@@ -73,16 +70,21 @@ def scrape_movie(movie, release_date):
             By.CSS_SELECTOR, ".name"
         ).text
 
-        # Extract the review rating and convert it to a float
-        review_rating_raw = top_review_element.find_element(
-            By.CSS_SELECTOR, ".rating"
-        ).text
-        if "½" in review_rating_raw:
-            movie_details["top_review_rating"] = (
-                float(review_rating_raw.count("★")) + 0.5
-            )
-        else:
-            movie_details["top_review_rating"] = float(review_rating_raw.count("★"))
+        # Try to extract the review rating
+        try:
+            review_rating_raw = top_review_element.find_element(
+                By.CSS_SELECTOR, ".rating"
+            ).text
+            # Convert star rating, handling half-star cases
+            if "½" in review_rating_raw:
+                movie_details["top_review_rating"] = (
+                    float(review_rating_raw.count("★")) + 0.5
+                )
+            else:
+                movie_details["top_review_rating"] = float(review_rating_raw.count("★"))
+        except Exception:
+            # If no rating is found, set it to 0
+            movie_details["top_review_rating"] = 0
 
         # Extract the review text
         movie_details["top_review_text"] = top_review_element.find_element(
