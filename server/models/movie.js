@@ -5,10 +5,15 @@ const db = require('./db');
 const insertMovie = async (
 	name,
 	director,
+	genre_1,
+	genre_2,
+	actor,
+	release_date,
 	averageRating,
 	reviewerName,
 	reviewRating,
-	reviewText
+	reviewText,
+	game_date
 ) => {
 	const query = `
     INSERT INTO movies (name, director, average_rating, reviewer_name, review_rating, review_text)
@@ -18,10 +23,15 @@ const insertMovie = async (
 	const values = [
 		name,
 		director,
+		genre_1,
+		genre_2,
+		actor,
+		release_date,
 		averageRating,
 		reviewerName,
 		reviewRating,
 		reviewText,
+		game_date,
 	];
 	try {
 		const result = await db.query(query, values);

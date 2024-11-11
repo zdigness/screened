@@ -13,13 +13,16 @@ function App() {
 	});
 	const [guessRows, setGuessRows] = useState(() => {
 		const savedState = JSON.parse(localStorage.getItem('gameState'));
-		return savedState?.guessRows || [null, null, null, null];
+		return savedState?.guessRows || [null, null, null, null, null];
 	});
 	const [flipStatus, setFlipStatus] = useState({});
 	const [correctMovieData, setCorrectMovieData] = useState({
-		genre: null,
-		rating: null,
 		director: null,
+		genre_1: null,
+		genre_2: null,
+		actor: null,
+		release_date: null,
+		rating: null,
 		title: null,
 	});
 	const [correctGuess, setCorrectGuess] = useState(false);
@@ -47,6 +50,8 @@ function App() {
 			localStorage.removeItem('outOfGuesses');
 			setOutOfGuesses(false);
 			setGuessRows([null, null, null, null]);
+			localStorage.removeItem('streakData');
+			setStreak(0);
 			// Set the new game date
 			localStorage.setItem('lastPlayDate', todayDate); // Update last play date to today
 		} else {
@@ -72,9 +77,10 @@ function App() {
 			.then((data) => {
 				setMovie(data);
 				setCorrectMovieData({
-					genre:
-						data.genre.charAt(0).toUpperCase() +
-						data.genre.slice(1).toLowerCase(),
+					actor: data.actor,
+					release_date: data.release_date,
+					genre_1: data.genre_1,
+					genre_2: data.genre_2,
 					rating: data.average_rating,
 					director: data.director,
 					title: data.name,
@@ -169,12 +175,10 @@ function App() {
 				setAnswer('');
 
 				const rowData = {
-					genre:
-						data.guessedMovie.genre.charAt(0).toUpperCase() +
-						data.guessedMovie.genre.slice(1).toLowerCase(),
+					release: data.guessedMovie.release_date,
 					rating: data.guessedMovie.average_rating,
+					genre: data.guessedMovie.genre,
 					director: data.guessedMovie.director,
-					title: data.guessedMovie.name,
 				};
 
 				const updatedGuessRows = [...guessRows];
@@ -267,7 +271,8 @@ function App() {
 						<div className='box p-6'>
 							<div className='text-2xl font-semibold mb-4'>Streak Counter</div>
 							<p className='text-lg'>
-								You have a streak of <span>{streak}</span> correct guesses!
+								You have a daily streak of <span>{streak}</span> correct
+								guesses!
 							</p>
 						</div>
 					</div>
@@ -422,12 +427,12 @@ function App() {
 				<thead>
 					<tr className=''>
 						<td className='w-1/4 p-4 border border-gray-400 rounded-l-lg'>
-							Genre
+							Release
 						</td>
 						<td className='w-1/4 p-4 border border-gray-400'>Rating</td>
-						<td className='w-1/4 p-4 border border-gray-400'>Director</td>
+						<td className='w-1/4 p-4 border border-gray-400'>Genre</td>
 						<td className='w-1/4 p-4 border border-gray-400 rounded-r-lg'>
-							Title
+							Director
 						</td>
 					</tr>
 				</thead>
