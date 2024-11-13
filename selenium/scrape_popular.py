@@ -1,3 +1,5 @@
+import os
+import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -14,7 +16,7 @@ driver = webdriver.Chrome(
 )
 
 # Open the Letterboxd popular films page
-url = "https://letterboxd.com/films/popular/"
+url = "https://letterboxd.com/films/popular/page/3/"
 driver.get(url)
 
 # Wait for the page to load
@@ -39,11 +41,28 @@ try:
         # Append the movie details to the list
         films.append({"title": title, "url": url})
 
-    # export to csv
-    with open("popular_films.csv", "w") as f:
-        f.write("title,url\n")
-        for film in films:
-            f.write(f"{film['title']},{film['url']}\n")
+    # Convert new films to a DataFrame
+    new_data = pd.DataFrame(films)
+
+    # Path to the CSV file
+    csv_file = "server/config/init/popular_films.csv"
+
+    if os.path.exists(csv_file):
+        # If the file exists, read the existing data
+        existing_data = pd.read_csv(csv_file)
+
+        # Combine new data with existing data
+        combined_data = pd.concat([existing_data, new_data]).drop_duplicates(
+            subset=["title"], keep="last"
+        )
+    else:
+        # If the file does not exist, use the new data as the dataset
+        combined_data = new_data
+
+    # Save the updated data back to the file
+    combined_data.to_csv(csv_file, index=False)
+
+    print(f"Data has been appended to {csv_file}.")
 
 finally:
     # Close the browser

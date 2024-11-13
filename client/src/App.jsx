@@ -24,17 +24,19 @@ function App() {
 		release_date: null,
 		rating: null,
 		title: null,
+		poster_url: null,
 	});
 	const [correctGuess, setCorrectGuess] = useState(false);
 	const [outOfGuesses, setOutOfGuesses] = useState(false);
 	const [guessBoxMessage, setGuessBoxMessage] = useState("Guess Today's Movie");
 	const [isModalActive, setIsModalActive] = useState(false);
-	const [isCorrectModalActive, setIsCorrectModalActive] = useState(false);
 	const [isStreakModalActive, setIsStreakModalActive] = useState(false);
 	const [streak, setStreak] = useState(() => {
 		const savedStreak = JSON.parse(localStorage.getItem('streakData'));
 		return savedStreak?.streak || 0;
 	});
+	const [showCorrectModal, setShowCorrectModal] = useState(false);
+	const [showOutOfGuessesModal, setShowOutOfGuessesModal] = useState(false);
 
 	useEffect(() => {
 		const todayDate = getMSTDateString();
@@ -84,6 +86,7 @@ function App() {
 					rating: data.average_rating,
 					director: data.director,
 					title: data.name,
+					poster_url: data.poster_url,
 				});
 			})
 			.catch((error) => {
@@ -177,7 +180,7 @@ function App() {
 				const rowData = {
 					release: data.guessedMovie.release_date,
 					rating: data.guessedMovie.average_rating,
-					genre: data.guessedMovie.genre,
+					genre_1: data.guessedMovie.genre_1,
 					director: data.guessedMovie.director,
 				};
 
@@ -200,21 +203,17 @@ function App() {
 					if (data.message === 'Correct guess!') {
 						setCorrectGuess(true);
 						setGuessBoxMessage('Correct! 🎉');
+						setShowCorrectModal(true);
 						localStorage.setItem('correctGuess', JSON.stringify(true));
 					} else if (guesses === 4) {
 						setOutOfGuesses(true);
 						setGuessBoxMessage('Out of guesses, try again tomorrow!');
+						setShowOutOfGuessesModal(true);
 						localStorage.setItem('outOfGuesses', JSON.stringify(true));
 					} else {
 						setGuesses(guesses + 1);
 					}
 				}, Object.keys(rowData).length * 600);
-
-				setTimeout(() => {
-					if (data.message === 'Correct guess!') {
-						setIsCorrectModalActive(true);
-					}
-				}, 2500);
 			})
 			.catch((error) => {
 				console.error('Error submitting answer:', error);
@@ -230,7 +229,11 @@ function App() {
 	};
 
 	const closeCorrectModal = () => {
-		setIsCorrectModalActive(false);
+		setShowCorrectModal(false);
+	};
+
+	const closeOutOfGuessesModal = () => {
+		setShowOutOfGuessesModal(false);
 	};
 
 	function getMSTDateString() {
@@ -264,6 +267,55 @@ function App() {
 				</button>
 			</div>
 
+			{/* Modal for Correct Guess */}
+			{showCorrectModal && (
+				<div className='modal is-active'>
+					<div className='modal-background' onClick={closeCorrectModal}></div>
+					<div className='modal-content'>
+						<div className='box flex flex-row gap-14 items-center'>
+							<div className='poster'>
+								<img src={correctMovieData.poster_url} alt='Movie Poster' />
+							</div>
+							<div className='info flex flex-col items-center gap-4 text-2xl'>
+								<p>
+									{correctMovieData.title}: {correctMovieData.release_date}
+								</p>
+								<p>Directed by: {correctMovieData.director}</p>
+								<p>Starring: {correctMovieData.actor}</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Modal for Out of Guesses */}
+			{showOutOfGuessesModal && (
+				<div className='modal is-active'>
+					<div
+						className='modal-background'
+						onClick={closeOutOfGuessesModal}
+					></div>
+					<div className='modal-content'>
+						<div className='box'>
+							<h3 className='text-2xl font-semibold'>Out of Guesses!</h3>
+							<p>The movie was: {correctMovieData.title}</p>
+							<p>Director: {correctMovieData.director}</p>
+							<p>Actor: {correctMovieData.actor}</p>
+							<p>
+								Genre: {correctMovieData.genre_1}, {correctMovieData.genre_2}
+							</p>
+							<p>Release Year: {correctMovieData.release_date}</p>
+							<button
+								className='mt-4 bg-red-500 text-white px-4 py-2 rounded'
+								onClick={closeOutOfGuessesModal}
+							>
+								Close
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
 			{isStreakModalActive && (
 				<div className={`modal ${isStreakModalActive ? 'is-active' : ''}`}>
 					<div className='modal-background' onClick={toggleStreakModal}></div>
@@ -291,20 +343,70 @@ function App() {
 						<div className='box p-6'>
 							<div className='text-2xl font-semibold mb-4'>How to Play</div>
 
-							{/* Genre Section */}
-							<div className='text-left text-lg font-medium mb-2'>Genre</div>
+							{/* Release Date Section */}
+							<div className='text-left text-lg font-medium mb-2'>
+								Release Date
+							</div>
 							<ul className='space-y-2'>
 								<li className='flex items-center gap-2'>
 									<div className='w-2 h-2 bg-black rounded-full'></div>
 									<p>
-										If the movie shares all the same genres, the tile will be{' '}
+										A guess with the same release year will be{' '}
 										<span className='text-green-500 font-semibold'>green</span>.
 									</p>
 								</li>
 								<li className='flex items-center gap-2'>
 									<div className='w-2 h-2 bg-black rounded-full'></div>
 									<p>
-										If the movie shares at least one genres, the tile will be{' '}
+										A guess within 2 years of the release year will be{' '}
+										<span className='text-yellow-300 font-semibold'>
+											yellow
+										</span>
+										.
+									</p>
+								</li>
+							</ul>
+
+							{/* Average Rating Section */}
+							<div className='text-left text-lg font-medium mt-4 mb-2'>
+								Average Rating
+							</div>
+							<ul className='space-y-2'>
+								<li className='flex items-center gap-2'>
+									<div className='w-2 h-2 bg-black rounded-full'></div>
+									<p>
+										A guess with the exact same average rating will be{' '}
+										<span className='text-green-500 font-semibold'>green</span>.
+									</p>
+								</li>
+								<li className='flex items-center gap-2'>
+									<div className='w-2 h-2 bg-black rounded-full'></div>
+									<p>
+										A guess within 0.2 of the actual average rating will be{' '}
+										<span className='text-yellow-300 font-semibold'>
+											yellow
+										</span>
+										.
+									</p>
+								</li>
+							</ul>
+
+							{/* Genre Section */}
+							<div className='text-left text-lg font-medium mb-2 mt-4'>
+								Genre
+							</div>
+							<ul className='space-y-2'>
+								<li className='flex items-center gap-2'>
+									<div className='w-2 h-2 bg-black rounded-full'></div>
+									<p>
+										A guess that shares the main genre will be{' '}
+										<span className='text-green-500 font-semibold'>green</span>.
+									</p>
+								</li>
+								<li className='flex items-center gap-2'>
+									<div className='w-2 h-2 bg-black rounded-full'></div>
+									<p>
+										A guess that shares a minor genre will be{' '}
 										<span className='text-yellow-300 font-semibold'>
 											yellow
 										</span>
@@ -326,56 +428,11 @@ function App() {
 									</p>
 								</li>
 							</ul>
-
-							{/* Average Rating Section */}
-							<div className='text-left text-lg font-medium mt-4 mb-2'>
-								Average Rating
-							</div>
-							<ul className='space-y-2'>
-								<li className='flex items-center gap-2'>
-									<div className='w-2 h-2 bg-black rounded-full'></div>
-									<p>
-										If the movie has the same average rating, the tile will be{' '}
-										<span className='text-green-500 font-semibold'>green</span>.
-									</p>
-								</li>
-								<li className='flex items-center gap-2'>
-									<div className='w-2 h-2 bg-black rounded-full'></div>
-									<p>
-										If the average rating is within 0.2, the tile will be{' '}
-										<span className='text-yellow-300 font-semibold'>
-											yellow
-										</span>
-										.
-									</p>
-								</li>
-							</ul>
 						</div>
 					</div>
 					<button
 						className='modal-close is-large'
 						onClick={toggleModal}
-						aria-label='close'
-					></button>
-				</div>
-			)}
-
-			{isCorrectModalActive && (
-				<div className={`modal ${isCorrectModalActive ? 'is-active' : ''}`}>
-					<div className='modal-background' onClick={closeCorrectModal}></div>
-					<div className='modal-content'>
-						<div className='box p-6'>
-							<div className='text-2xl font-semibold mb-4'>
-								Congratulations!
-							</div>
-							<p className='text-lg'>
-								You guessed the movie correctly! You can try again tomorrow.
-							</p>
-						</div>
-					</div>
-					<button
-						className='modal-close is-large'
-						onClick={closeCorrectModal}
 						aria-label='close'
 					></button>
 				</div>
@@ -442,29 +499,44 @@ function App() {
 				<tbody>
 					{guessRows.map((row, rowIndex) => (
 						<tr key={rowIndex}>
-							{['genre', 'rating', 'director', 'title'].map((col, colIndex) => {
-								let bgColor = 'bg-white';
-								if (row && correctMovieData) {
-									if (row[col] === correctMovieData[col]) {
-										bgColor = 'bg-green-500';
-									} else if (
-										col === 'rating' &&
-										Math.abs(row[col] - correctMovieData.rating) <= 0.2
-									) {
-										bgColor = 'bg-yellow-300';
+							{['release', 'rating', 'genre_1', 'director'].map(
+								(col, colIndex) => {
+									let bgColor = 'bg-white';
+									if (row && correctMovieData) {
+										if (row[col] === correctMovieData[col]) {
+											bgColor = 'bg-green-500';
+										} else if (
+											col === 'rating' &&
+											Math.abs(row[col] - correctMovieData.rating) <= 0.2
+										) {
+											bgColor = 'bg-yellow-300';
+										} else if (
+											col == 'release' &&
+											row[col] === correctMovieData.release_date
+										) {
+											bgColor = 'bg-green-500';
+										} else if (
+											col == 'release' &&
+											Math.abs(
+												new Date(row[col]).getFullYear() -
+													new Date(correctMovieData.release_date).getFullYear()
+											) <= 2
+										) {
+											bgColor = 'bg-yellow-300';
+										}
 									}
+									return (
+										<td
+											key={colIndex}
+											className={`w-1/4 h-14 p-4 border-gray-200 rounded-lg text-black min-w-20 ${bgColor} ${
+												flipStatus[`${rowIndex}-${col}`] ? 'flip' : ''
+											}`}
+										>
+											{row ? row[col] : ''}
+										</td>
+									);
 								}
-								return (
-									<td
-										key={colIndex}
-										className={`w-1/4 h-14 p-4 border-gray-200 rounded-lg text-black min-w-20 ${bgColor} ${
-											flipStatus[`${rowIndex}-${col}`] ? 'flip' : ''
-										}`}
-									>
-										{row ? row[col] : ''}
-									</td>
-								);
-							})}
+							)}
 						</tr>
 					))}
 				</tbody>

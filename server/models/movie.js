@@ -13,10 +13,11 @@ const insertMovie = async (
 	reviewerName,
 	reviewRating,
 	reviewText,
+	poster_url,
 	game_date
 ) => {
 	const query = `
-    INSERT INTO movies (name, director, average_rating, reviewer_name, review_rating, review_text)
+    INSERT INTO movies (name, director, average_rating, reviewer_name, review_rating, review_text, poster_url)
     VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING *;
   `;
@@ -31,6 +32,7 @@ const insertMovie = async (
 		reviewerName,
 		reviewRating,
 		reviewText,
+		poster_url,
 		game_date,
 	];
 	try {

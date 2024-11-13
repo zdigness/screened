@@ -4,10 +4,14 @@ const db = require('../models/db');
 
 // Endpoint to get today's movie
 router.get('/today', async (req, res) => {
+	// get MST timezone date
+	const date = new Date();
+	date.setHours(date.getHours() - 7);
+	const dateStr = date.toISOString().split('T')[0];
 	try {
-		const result = await db.query(
-			'SELECT * FROM movies WHERE game_date = CURRENT_DATE LIMIT 1'
-		);
+		const result = await db.query('SELECT * FROM movies WHERE game_date = $1', [
+			dateStr,
+		]);
 		if (result.rows.length > 0) {
 			res.json(result.rows[0]);
 		} else {

@@ -15,7 +15,7 @@ driver = webdriver.Chrome(
 )
 
 # Read the CSV file into a DataFrame
-movies_df = pd.read_csv("popular_films.csv")
+movies_df = pd.read_csv("server/config/init/popular_films.csv")
 # Convert the DataFrame into a list of dictionaries
 movies = movies_df.to_dict(orient="records")
 
@@ -40,6 +40,7 @@ def scrape_movie(movie, release_date):
         "top_reviewer": None,
         "top_review_rating": 0,  # Default rating to 0 in case it's missing
         "top_review_text": None,
+        "poster_url": None,
         "release_date": release_date.strftime("%Y-%m-%d"),  # Incremented release date
     }
 
@@ -58,6 +59,14 @@ def scrape_movie(movie, release_date):
         movie_details["movie_release"] = int(release_year_text)
     except Exception as e:
         print(f"Error scraping release year for {movie['title']}: {e}")
+
+    try:
+        # Scrape the poster URL
+        movie_details["poster_url"] = driver.find_element(
+            By.CSS_SELECTOR, ".film-poster img"
+        ).get_attribute("src")
+    except Exception as e:
+        print(f"Error scraping poster URL for {movie['title']}: {e}")
 
     try:
         # Scrape the first actor's name
@@ -172,7 +181,7 @@ for index, movie in enumerate(movies):
 
 # Save the data to a CSV file
 df = pd.DataFrame(movie_data)
-df.to_csv("movies_data.csv", index=False)
+df.to_csv("server/config/init/movies_data.csv", index=False)
 
 # Close the browser
 driver.quit()
