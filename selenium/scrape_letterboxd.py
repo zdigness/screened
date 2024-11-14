@@ -122,53 +122,76 @@ def scrape_movie(movie, release_date):
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(3)  # Wait for reviews to load
 
+        # get all 3 top reviews
         top_review_elements = driver.find_elements(
             By.CSS_SELECTOR, "#popular-reviews .film-detail-content"
         )
 
-        # Get the first review element
-        top_review_element = top_review_elements[0]
-
-        spoilers = True
-        while spoilers:
+        # loop through all top reviews
+        for top_review_element in top_review_elements:
             try:
-                top_review_element.find_element(By.CSS_SELECTOR, ".contains-spoilers")
-                top_review_elements.pop(0)
-                top_review_element = top_review_elements[0]
-            except:
-                spoilers = False
+                if top_review_element.find_element(
+                    By.CSS_SELECTOR, ".contains-spoilers"
+                ):
+                    continue
+            except Exception:
+                pass
 
-        # Extract the reviewer's name
-        movie_details["top_reviewer"] = top_review_element.find_element(
-            By.CSS_SELECTOR, ".name"
-        ).text
+            # Create a new dictionary for each review
+            review_details = {
+                "title": movie["title"],
+                "director": movie_details["director"],
+                "genre_1": movie_details["genre_1"],
+                "genre_2": movie_details["genre_2"],
+                "actors": movie_details["actors"],
+                "movie_release": movie_details["movie_release"],
+                "average_rating": movie_details["average_rating"],
+                "top_reviewer": None,
+                "top_review_rating": 0,  # Default rating to 0 in case it's missing
+                "top_review_text": None,
+                "poster_url": movie_details["poster_url"],
+                "release_date": movie_details["release_date"],
+            }
 
-        # Try to extract the review rating
-        try:
-            review_rating_raw = top_review_element.find_element(
-                By.CSS_SELECTOR, ".rating"
+            # Extract the reviewer's name
+            review_details["top_reviewer"] = top_review_element.find_element(
+                By.CSS_SELECTOR, ".name"
             ).text
-            # Convert star rating, handling half-star cases
-            if "½" in review_rating_raw:
-                movie_details["top_review_rating"] = (
-                    float(review_rating_raw.count("★")) + 0.5
-                )
-            else:
-                movie_details["top_review_rating"] = float(review_rating_raw.count("★"))
-        except Exception:
-            # If no rating is found, set it to 0
-            movie_details["top_review_rating"] = 0
 
-        # Extract the review text
-        movie_details["top_review_text"] = top_review_element.find_element(
-            By.CSS_SELECTOR, ".body-text"
-        ).text
+            # Try to extract the review rating
+            try:
+                review_rating_raw = top_review_element.find_element(
+                    By.CSS_SELECTOR, ".rating"
+                ).text
+                if "½" in review_rating_raw:
+                    review_details["top_review_rating"] = (
+                        float(review_rating_raw.count("★")) + 0.5
+                    )
+                else:
+                    review_details["top_review_rating"] = float(
+                        review_rating_raw.count("★")
+                    )
+            except Exception:
+                review_details["top_review_rating"] = 0
+
+            # Extract the review text
+            review_details["top_review_text"] = top_review_element.find_element(
+                By.CSS_SELECTOR, ".body-text"
+            ).text
+
+            # Skip review if it contains movie name
+            if movie["title"].lower() in review_details["top_review_text"].lower():
+                continue
+
+            # Skip review if it is too long
+            if len(review_details["top_review_text"]) > 500:
+                continue
+
+            # Append the new dictionary to the list
+            movie_data.append(review_details)
 
     except Exception as e:
         print(f"Error scraping top review for {movie['title']}: {e}")
-
-    # Add movie details to the list
-    movie_data.append(movie_details)
 
 
 # Calculate today's date
