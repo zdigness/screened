@@ -308,26 +308,19 @@ function App() {
 			{/* Modal for Out of Guesses */}
 			{showOutOfGuessesModal && (
 				<div className='modal is-active'>
-					<div
-						className='modal-background'
-						onClick={closeOutOfGuessesModal}
-					></div>
+					<div className='modal-background' onClick={closeCorrectModal}></div>
 					<div className='modal-content'>
-						<div className='box'>
-							<h3 className='text-2xl font-semibold'>Out of Guesses!</h3>
-							<p>The movie was: {correctMovieData.title}</p>
-							<p>Director: {correctMovieData.director}</p>
-							<p>Actor: {correctMovieData.actor}</p>
-							<p>
-								Genre: {correctMovieData.genre_1}, {correctMovieData.genre_2}
-							</p>
-							<p>Release Year: {correctMovieData.release_date}</p>
-							<button
-								className='mt-4 bg-red-500 text-white px-4 py-2 rounded'
-								onClick={closeOutOfGuessesModal}
-							>
-								Close
-							</button>
+						<div className='box flex flex-row gap-14 items-center'>
+							<div className='poster'>
+								<img src={correctMovieData.poster_url} alt='Movie Poster' />
+							</div>
+							<div className='info flex flex-col items-center gap-4 text-2xl'>
+								<p>
+									{correctMovieData.title}: {correctMovieData.release_date}
+								</p>
+								<p>Directed by: {correctMovieData.director}</p>
+								<p>Starring: {correctMovieData.actor}</p>
+							</div>
 						</div>
 					</div>
 				</div>
