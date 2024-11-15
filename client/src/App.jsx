@@ -185,7 +185,7 @@ function App() {
 	};
 
 	const submitAnswer = (selectedAnswer) => {
-		fetch('http://screened.onrender.com/api/submit-answer', {
+		fetch('https://screened.onrender.com/api/submit-answer', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ answer: selectedAnswer }),
