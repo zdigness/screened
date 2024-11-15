@@ -17,7 +17,7 @@ router.post('/submit-answer', async (req, res) => {
 		// Query today's movie from the database
 		const todayMovieResult = await db.query(
 			'SELECT * FROM movies WHERE game_date = $1',
-			moment().tz('America/Denver').format('YYYY-MM-DD')
+			[moment().tz('America/Denver').format('YYYY-MM-DD')]
 		);
 
 		if (movieResult.rows.length > 0) {
