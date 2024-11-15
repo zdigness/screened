@@ -308,7 +308,10 @@ function App() {
 			{/* Modal for Out of Guesses */}
 			{showOutOfGuessesModal && (
 				<div className='modal is-active'>
-					<div className='modal-background' onClick={closeCorrectModal}></div>
+					<div
+						className='modal-background'
+						onClick={closeOutOfGuessesModal}
+					></div>
 					<div className='modal-content'>
 						<div className='box flex flex-row gap-14 items-center'>
 							<div className='poster'>
