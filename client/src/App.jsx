@@ -74,6 +74,8 @@ function App() {
 			}
 		}
 
+		// dev
+		// fetch('http://localhost:5000/api/movies/today')
 		fetch('https://screened.onrender.com/api/movies/today')
 			.then((response) => response.json())
 			.then((data) => {
@@ -94,6 +96,8 @@ function App() {
 				setError("Error fetching today's game");
 			});
 
+		// dev
+		// fetch('http://localhost:5000/api/api/movies')
 		fetch('http://screened.onrender.com/api/movies')
 			.then((response) => response.json())
 			.then((data) => {
