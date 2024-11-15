@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../models/db');
+const moment = require('moment-timezone');
 
 router.post('/submit-answer', async (req, res) => {
 	const guessedMovieName = req.body.answer;
@@ -16,7 +17,7 @@ router.post('/submit-answer', async (req, res) => {
 		// Query today's movie from the database
 		const todayMovieResult = await db.query(
 			'SELECT * FROM movies WHERE game_date = $1',
-			[new Date().toISOString().split('T')[0]]
+			moment().tz('America/Denver').format('YYYY-MM-DD')
 		);
 
 		if (movieResult.rows.length > 0) {
