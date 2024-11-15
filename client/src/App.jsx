@@ -97,8 +97,8 @@ function App() {
 			});
 
 		// dev
-		// fetch('http://localhost:5000/api/api/movies')
-		fetch('http://screened.onrender.com/api/movies')
+		// fetch('https://localhost:5000/api/api/movies')
+		fetch('https://screened.onrender.com/api/movies')
 			.then((response) => response.json())
 			.then((data) => {
 				// Create a Set to store unique movie titles
