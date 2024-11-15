@@ -74,7 +74,7 @@ function App() {
 			}
 		}
 
-		fetch('http://localhost:5000/api/movies/today')
+		fetch('https://screened.onrender.com/api/movies/today')
 			.then((response) => response.json())
 			.then((data) => {
 				setMovie(data);
@@ -94,7 +94,7 @@ function App() {
 				setError("Error fetching today's game");
 			});
 
-		fetch('http://localhost:5000/api/movies')
+		fetch('http://screened.onrender.com/api/movies')
 			.then((response) => response.json())
 			.then((data) => {
 				// Create a Set to store unique movie titles
@@ -181,7 +181,7 @@ function App() {
 	};
 
 	const submitAnswer = (selectedAnswer) => {
-		fetch('http://localhost:5000/api/submit-answer', {
+		fetch('http://screened.onrender.com/api/submit-answer', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ answer: selectedAnswer }),
