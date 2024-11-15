@@ -96,7 +96,20 @@ function App() {
 
 		fetch('http://localhost:5000/api/movies')
 			.then((response) => response.json())
-			.then((data) => setAllMovies(data))
+			.then((data) => {
+				// Create a Set to store unique movie titles
+				const uniqueTitles = new Set();
+				const uniqueMovies = [];
+
+				data.forEach((movie) => {
+					if (!uniqueTitles.has(movie)) {
+						uniqueTitles.add(movie); // Add to Set for deduplication
+						uniqueMovies.push(movie); // Keep the original title
+					}
+				});
+
+				setAllMovies(uniqueMovies); // Set the deduplicated movie list
+			})
 			.catch((error) => console.error('Error fetching all movies:', error));
 	}, []);
 
@@ -532,7 +545,9 @@ function App() {
 												flipStatus[`${rowIndex}-${col}`] ? 'flip' : ''
 											}`}
 										>
-											{row ? row[col] : ''}
+											<div className='flex justify-center items-center h-full text-center overflow-hidden'>
+												{row ? row[col] : ''}
+											</div>
 										</td>
 									);
 								}
