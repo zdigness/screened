@@ -1,57 +1,62 @@
 const { Pool } = require('pg');
-const cors = require('cors');
 
+// Initialize database connection pool
 const pool = new Pool({
 	connectionString: process.env.DATABASE_URL,
 	ssl: { rejectUnauthorized: false },
 });
 
-// Middleware for CORS
-const corsMiddleware = cors();
+// Serverless function handler
+export default async function handler(req, res) {
+	// Handle only POST requests
+	if (req.method !== 'POST') {
+		return res.status(405).json({ error: 'Method not allowed' });
+	}
 
-const handler = async (req, res) => {
-	corsMiddleware(req, res, async () => {
-		if (req.method === 'POST') {
-			const { answer } = req.body;
+	const { answer } = req.body;
 
-			const date = new Date();
-			date.setHours(date.getHours() - 7); // MST timezone
-			const today = date.toISOString().split('T')[0];
+	if (!answer) {
+		return res.status(400).json({ error: 'Answer is required' });
+	}
 
-			try {
-				const guessedMovieQuery = await pool.query(
-					'SELECT * FROM movies WHERE name = $1 LIMIT 1',
-					[answer]
-				);
-				const todayMovieQuery = await pool.query(
-					'SELECT * FROM movies WHERE game_date = $1',
-					[today]
-				);
+	// Get today's date in MST timezone
+	const date = new Date();
+	date.setHours(date.getHours() - 7);
+	const today = date.toISOString().split('T')[0];
 
-				if (guessedMovieQuery.rows.length === 0) {
-					res.status(404).json({ message: 'Movie not found' });
-				} else {
-					const guessedMovie = guessedMovieQuery.rows[0];
-					const correctMovie = todayMovieQuery.rows[0];
-					const isCorrect = guessedMovie.name === correctMovie.name;
+	try {
+		// Query to find the guessed movie
+		const guessedMovieQuery = await pool.query(
+			'SELECT * FROM movies WHERE name = $1 LIMIT 1',
+			[answer]
+		);
 
-					res.json({
-						correct: isCorrect,
-						message: isCorrect
-							? 'Correct guess!'
-							: 'Incorrect guess, try again.',
-						guessedMovie,
-						correctMovie,
-					});
-				}
-			} catch (error) {
-				console.error('Error in /submit-answer:', error);
-				res.status(500).json({ error: 'Database error' });
-			}
-		} else {
-			res.status(405).json({ error: 'Method not allowed' });
+		// Query to find today's movie
+		const todayMovieQuery = await pool.query(
+			'SELECT * FROM movies WHERE game_date = $1',
+			[today]
+		);
+
+		// Handle case where guessed movie is not found
+		if (guessedMovieQuery.rows.length === 0) {
+			return res.status(404).json({ message: 'Movie not found' });
 		}
-	});
-};
 
-export default handler;
+		// Extract results from queries
+		const guessedMovie = guessedMovieQuery.rows[0];
+		const correctMovie = todayMovieQuery.rows[0];
+
+		// Check if the guess is correct
+		const isCorrect = guessedMovie.name === correctMovie.name;
+
+		return res.status(200).json({
+			correct: isCorrect,
+			message: isCorrect ? 'Correct guess!' : 'Incorrect guess, try again.',
+			guessedMovie,
+			correctMovie,
+		});
+	} catch (error) {
+		console.error('Error in /submit-answer:', error);
+		return res.status(500).json({ error: 'Database error' });
+	}
+}

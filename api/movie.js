@@ -1,51 +1,42 @@
 const { Pool } = require('pg');
-const cors = require('cors');
 
-const pool = new Pool({
-	connectionString: process.env.DATABASE_URL,
-	ssl: { rejectUnauthorized: false },
+// Initialize database connection pool
+const db = new Pool({
+	connectionString: process.env.DATABASE_URL, // Ensure this environment variable is set in Vercel
 });
 
-// Middleware for CORS
-const corsMiddleware = cors();
+export default async (req, res) => {
+	const { method, query } = req;
 
-const handler = async (req, res) => {
-	corsMiddleware(req, res, async () => {
-		if (req.method === 'GET') {
-			if (req.query.route === 'today') {
-				const date = new Date();
-				date.setHours(date.getHours() - 7); // MST timezone
-				const today = date.toISOString().split('T')[0];
-				try {
-					const result = await pool.query(
-						'SELECT * FROM movies WHERE game_date = $1',
-						[today]
-					);
-					if (result.rows.length > 0) {
-						res.json(result.rows[0]);
-					} else {
-						res.status(404).json({ message: 'No game available for today' });
-					}
-				} catch (error) {
-					console.error('Error fetching today’s movie:', error);
-					res.status(500).json({ error: 'Database error' });
-				}
-			} else if (req.query.route === 'all') {
-				try {
-					const result = await pool.query('SELECT name FROM movies');
-					const movieNames = result.rows.map((row) => row.name);
-					res.json(movieNames);
-				} catch (error) {
-					console.error('Error fetching movie names:', error);
-					res.status(500).json({ error: 'Database error' });
+	// Get MST timezone date
+	const date = new Date();
+	date.setHours(date.getHours() - 7);
+	const dateStr = date.toISOString().split('T')[0];
+
+	try {
+		if (method === 'GET') {
+			if (query.endpoint === 'today') {
+				// Get today's movie
+				const result = await db.query(
+					'SELECT * FROM movies WHERE game_date = $1',
+					[dateStr]
+				);
+				if (result.rows.length > 0) {
+					res.status(200).json(result.rows[0]);
+				} else {
+					res.status(404).json({ message: 'No game available for today' });
 				}
 			} else {
-				res.status(400).json({ error: 'Invalid route' });
+				// Get all movie names
+				const result = await db.query('SELECT name FROM movies');
+				const movieNames = result.rows.map((row) => row.name);
+				res.status(200).json(movieNames);
 			}
 		} else {
 			res.status(405).json({ error: 'Method not allowed' });
 		}
-	});
+	} catch (err) {
+		console.error('Error handling request:', err);
+		res.status(500).json({ error: 'Database error' });
+	}
 };
-
-export default handler;
