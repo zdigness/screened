@@ -77,7 +77,10 @@ function App() {
 
 		// dev
 		// fetch('http://localhost:5000/api/movies/today')
-		fetch(`${BASE_URL}/api/movie?endpoint=today`)
+		fetch(`${BASE_URL}/api/movie?endpoint=today`, {
+			method: 'GET',
+			headers: { 'Content-Type': 'application/json' },
+		})
 			.then((response) => response.json())
 			.then((data) => {
 				setMovie(data);
@@ -99,7 +102,10 @@ function App() {
 
 		// dev
 		// fetch('https://localhost:5000/api/api/movies')
-		fetch(`${BASE_URL}/api/movie`)
+		fetch(`${BASE_URL}/api/movie`, {
+			method: 'GET',
+			headers: { 'Content-Type': 'application/json' },
+		})
 			.then((response) => response.json())
 			.then((data) => {
 				// Create a Set to store unique movie titles
