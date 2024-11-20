@@ -5,13 +5,20 @@ const db = new Pool({
 	connectionString: process.env.DATABASE_URL, // Ensure this environment variable is set in Vercel
 });
 
-export default async (req, res) => {
-	// Enable CORS
-	res.setHeader('Access-Control-Allow-Origin', 'https://screened.vercel.app');
-	res.setHeader('Access-Control-Allow-Methods', 'GET');
-	res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+const allowCors = (fn) => async (req, res) => {
+	res.setHeader('Access-Control-Allow-Credentials', true);
+	res.setHeader('Access-Control-Allow-Origin', '*');
+	res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+	res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With');
+	if (req.method === 'OPTIONS') {
+		res.status(200).end();
+		return;
+	}
+	return await fn(req, res);
+};
 
-	// Handle only GET requests
+const handler = async (req, res) => {
+	// Enable CORS
 
 	const { method, query } = req;
 
@@ -47,3 +54,5 @@ export default async (req, res) => {
 		res.status(500).json({ error: 'Database error' });
 	}
 };
+
+export default allowCors(handler);
