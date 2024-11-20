@@ -4,7 +4,7 @@ const cors = require('cors');
 // Enable CORS
 const corsMiddleware = cors({
 	origin: 'https://screened.vercel.app',
-	methods: ['POST'],
+	methods: ['POST', 'OPTIONS', 'GET'],
 });
 
 // Initialize database connection pool
