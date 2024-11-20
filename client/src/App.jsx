@@ -77,7 +77,7 @@ function App() {
 
 		// dev
 		// fetch('http://localhost:5000/api/movies/today')
-		fetch(`${BASE_URL}/movies/today`)
+		fetch('https://screened.onrender.com/api/movies/today')
 			.then((response) => response.json())
 			.then((data) => {
 				setMovie(data);
@@ -99,7 +99,7 @@ function App() {
 
 		// dev
 		// fetch('https://localhost:5000/api/api/movies')
-		fetch(`${BASE_URL}/api/movies`)
+		fetch('https://screened.onrender.com/api/movies')
 			.then((response) => response.json())
 			.then((data) => {
 				// Create a Set to store unique movie titles
@@ -186,7 +186,7 @@ function App() {
 	};
 
 	const submitAnswer = (selectedAnswer) => {
-		fetch(`${BASE_URL}/api/submit-answer`, {
+		fetch('https://screened.onrender.com/api/submit-answer', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ answer: selectedAnswer }),
