@@ -9,8 +9,14 @@ const pool = new Pool({
 const allowCors = (fn) => async (req, res) => {
 	res.setHeader('Access-Control-Allow-Credentials', true);
 	res.setHeader('Access-Control-Allow-Origin', 'https://screened.vercel.app');
-	res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-	res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+	res.setHeader(
+		'Access-Control-Allow-Methods',
+		'GET, POST, PUT, PATCH, OPTIONS, DELETE'
+	);
+	res.setHeader(
+		'Access-Control-Allow-Headers',
+		'Origin, X-Requested-With, Content-Type, Accept'
+	);
 	if (req.method === 'OPTIONS') {
 		res.status(200).end();
 		return;
@@ -21,7 +27,9 @@ const allowCors = (fn) => async (req, res) => {
 // Serverless function handler
 const handler = async (req, res) => {
 	if (req.method === 'OPTIONS') {
-		return res.status(200).end();
+		return res.status(200).json({
+			body: 'OK',
+		});
 	}
 
 	// Handle only POST requests
