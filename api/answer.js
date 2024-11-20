@@ -1,11 +1,4 @@
 const { Pool } = require('pg');
-const cors = require('cors');
-
-// Enable CORS
-const corsMiddleware = cors({
-	origin: 'https://screened.vercel.app',
-	methods: ['POST', 'OPTIONS', 'GET'],
-});
 
 // Initialize database connection pool
 const pool = new Pool({
@@ -15,12 +8,14 @@ const pool = new Pool({
 
 // Serverless function handler
 export default async function handler(req, res) {
-	// Apply CORS
-	corsMiddleware(req, res, () => {
-		if (req.method === 'OPTIONS') {
-			return res.status(200).end();
-		}
-	});
+	// Enable CORS
+	res.setHeader('Access-Control-Allow-Origin', 'https://screened.vercel.app');
+	res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+	res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+	if (req.method === 'OPTIONS') {
+		return res.status(200).end();
+	}
 
 	// Handle only POST requests
 	if (req.method !== 'POST') {
