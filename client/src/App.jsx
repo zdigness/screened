@@ -1,3 +1,4 @@
+// imports
 import { useState, useEffect } from 'react';
 import './App.css'; // Ensure Tailwind and custom CSS are included
 import BASE_URL from './config';
@@ -36,16 +37,49 @@ function App() {
 		const savedStreak = JSON.parse(localStorage.getItem('streakData'));
 		return savedStreak?.streak || 0;
 	});
+	const [bestStreak, setBestStreak] = useState(() => {
+		const savedStreak = JSON.parse(localStorage.getItem('streakData'));
+		return savedStreak?.bestStreak || 0;
+	});
 	const [showCorrectModal, setShowCorrectModal] = useState(false);
 	const [showOutOfGuessesModal, setShowOutOfGuessesModal] = useState(false);
 
+	// total games
+	const [totalGames, setTotalGames] = useState(() => {
+		const savedStats = JSON.parse(localStorage.getItem('stats'));
+		return savedStats?.total || 0;
+	});
+
+	// amount of guess wins
+	const [oneGuessWins, setOneGuessWins] = useState(() => {
+		const savedStats = JSON.parse(localStorage.getItem('stats'));
+		return savedStats?.oneGuess || 0;
+	});
+
+	const [twoGuessWins, setTwoGuessWins] = useState(() => {
+		const savedStats = JSON.parse(localStorage.getItem('stats'));
+		return savedStats?.twoGuess || 0;
+	});
+
+	const [threeGuessWins, setThreeGuessWins] = useState(() => {
+		const savedStats = JSON.parse(localStorage.getItem('stats'));
+		return savedStats?.threeGuess || 0;
+	});
+
+	const [fourGuessWins, setFourGuessWins] = useState(() => {
+		const savedStats = JSON.parse(localStorage.getItem('stats'));
+		return savedStats?.fourGuess || 0;
+	});
+
+	// load game
 	useEffect(() => {
+		// grab dates
 		const todayDate = getMSTDateString();
 		const lastPlayDate = localStorage.getItem('lastPlayDate');
 
-		// Check if it's a new day
+		// check if its a new day
 		if (lastPlayDate !== todayDate) {
-			// Clear only the game-related keys
+			// clear daily game data (new day)
 			localStorage.removeItem('gameState');
 			setGuesses(1);
 			localStorage.removeItem('correctGuess');
@@ -53,12 +87,11 @@ function App() {
 			localStorage.removeItem('outOfGuesses');
 			setOutOfGuesses(false);
 			setGuessRows([null, null, null, null]);
-			localStorage.removeItem('streakData');
-			setStreak(0);
-			// Set the new game date
-			localStorage.setItem('lastPlayDate', todayDate); // Update last play date to today
+
+			// set new game date
+			localStorage.setItem('lastPlayDate', todayDate);
 		} else {
-			// Restore any saved state for `correctGuess` or `outOfGuesses`
+			// restore saved data for the current day
 			const savedCorrectGuess = JSON.parse(
 				localStorage.getItem('correctGuess')
 			);
@@ -75,8 +108,18 @@ function App() {
 			}
 		}
 
-		// dev
-		// fetch('http://localhost:5000/api/movies/today')
+		// restore stats
+		const savedStats = JSON.parse(localStorage.getItem('stats'));
+		if (savedStats) {
+			setTotalGames(savedStats.total || 0);
+			setOneGuessWins(savedStats.oneGuess || 0);
+			setTwoGuessWins(savedStats.twoGuess || 0);
+			setThreeGuessWins(savedStats.threeGuess || 0);
+			setFourGuessWins(savedStats.fourGuess || 0);
+		}
+
+		// fetch today's movie
+		// fetch('http://localhost:5000/api/movie/today', {
 		fetch(`${BASE_URL}/api/movie?endpoint=today`, {
 			method: 'GET',
 			headers: { 'Content-Type': 'application/json' },
@@ -100,8 +143,8 @@ function App() {
 				setError("Error fetching today's game");
 			});
 
-		// dev
-		// fetch('https://localhost:5000/api/api/movies')
+		// fetch all movies
+		//fetch('http://localhost:5000/api/movie/', {
 		fetch(`${BASE_URL}/api/movie`, {
 			method: 'GET',
 			headers: { 'Content-Type': 'application/json' },
@@ -124,6 +167,7 @@ function App() {
 			.catch((error) => console.error('Error fetching all movies:', error));
 	}, []);
 
+	// save game state
 	useEffect(() => {
 		// add a timeout to prevent the state from being updated too quickly
 		setTimeout(() => {
@@ -134,28 +178,62 @@ function App() {
 			};
 			localStorage.setItem('gameState', JSON.stringify(gameState));
 
-			const streakData = JSON.parse(localStorage.getItem('streakData')) || {
-				streak: 0,
-				lastWinDate: null,
-			};
 			const today = getMSTDateString();
 
+			// Fetch existing streak data
+			const streakData = JSON.parse(localStorage.getItem('streakData')) || {
+				streak: 0,
+				bestStreak: 0,
+				lastWinDate: null,
+			};
+
 			if (correctGuess && streakData.lastWinDate !== today) {
-				const newStreak = streak + 1;
+				const yesterday = new Date();
+				yesterday.setDate(yesterday.getDate() - 1);
+				const yesterdayDate = yesterday.toISOString().split('T')[0];
+
+				let newStreak = 1;
+
+				// Increment streak if yesterday's win date matches
+				if (streakData.lastWinDate === yesterdayDate) {
+					newStreak = streakData.streak + 1;
+				}
+
+				// Update state and localStorage
 				setStreak(newStreak);
+				const updatedBestStreak = Math.max(newStreak, streakData.bestStreak);
+				setBestStreak(updatedBestStreak);
+
 				localStorage.setItem(
 					'streakData',
-					JSON.stringify({ streak: newStreak, lastWinDate: today })
+					JSON.stringify({
+						streak: newStreak,
+						bestStreak: updatedBestStreak,
+						lastWinDate: today,
+					})
 				);
-			} else if (guesses === 4 && !correctGuess) {
+
+				// Update stats
+				const stats = JSON.parse(localStorage.getItem('stats')) || null;
+				setTotalGames(stats.total);
+				setOneGuessWins(stats.oneGuess);
+				setTwoGuessWins(stats.twoGuess);
+				setThreeGuessWins(stats.threeGuess);
+				setFourGuessWins(stats.fourGuess);
+			} else if (!correctGuess && guesses === 4) {
+				// Reset streak on failure
 				setStreak(0);
 				localStorage.setItem(
 					'streakData',
-					JSON.stringify({ streak: 0, lastWinDate: null })
+					JSON.stringify({
+						streak: 0,
+						bestStreak: streakData.bestStreak,
+						lastWinDate: null,
+					})
 				);
 			}
 		}, 500);
-	}, [guesses, guessRows, correctGuess, streak]);
+	}, [guesses, guessRows, correctGuess, streak, bestStreak]);
 
 	const getStarRating = (rating) => {
 		const fullStars = Math.floor(rating);
@@ -179,9 +257,18 @@ function App() {
 			return;
 		}
 
-		const filtered = allMovies.filter((movie) =>
-			movie.toLowerCase().includes(input.toLowerCase())
+		// Extract guessed movie titles from guessRows
+		const guessedMovies = guessRows
+			.filter((row) => row && row.title)
+			.map((row) => row.title);
+
+		// Filter out guessed movies
+		const filtered = allMovies.filter(
+			(movie) =>
+				movie.toLowerCase().includes(input.toLowerCase()) &&
+				!guessedMovies.includes(movie)
 		);
+
 		setFilteredMovies(filtered);
 	};
 
@@ -192,6 +279,19 @@ function App() {
 	};
 
 	const submitAnswer = (selectedAnswer) => {
+		// Extract all guessed movie titles from guessRows
+		const guessedMovies = guessRows
+			.filter((row) => row && row.title) // Ensure the row is not null and has a title
+			.map((row) => row.title);
+
+		// Check if the movie has already been guessed
+		if (guessedMovies.includes(selectedAnswer)) {
+			alert("You've already guessed this movie! Try another one.");
+			return;
+		}
+
+		// dev
+		// fetch('http://localhost:5000/api/submit-answer', {
 		fetch(`${BASE_URL}/api/answer`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -206,6 +306,7 @@ function App() {
 					rating: data.guessedMovie.average_rating,
 					genre_1: data.guessedMovie.genre_1,
 					director: data.guessedMovie.director,
+					title: data.guessedMovie.name,
 				};
 
 				const updatedGuessRows = [...guessRows];
@@ -229,11 +330,76 @@ function App() {
 						setGuessBoxMessage('Correct! 🎉');
 						setShowCorrectModal(true);
 						localStorage.setItem('correctGuess', JSON.stringify(true));
+
+						// update stats
+						const stats = JSON.parse(localStorage.getItem('stats')) || null;
+						if (stats) {
+							stats.total += 1;
+							switch (guesses) {
+								case 1:
+									stats.oneGuess += 1;
+									break;
+								case 2:
+									stats.twoGuess += 1;
+									break;
+								case 3:
+									stats.threeGuess += 1;
+									break;
+								case 4:
+									stats.fourGuess += 1;
+									break;
+								default:
+									break;
+							}
+							localStorage.setItem('stats', JSON.stringify(stats));
+						} else {
+							const newStats = {
+								total: 0,
+								oneGuess: 0,
+								twoGuess: 0,
+								threeGuess: 0,
+								fourGuess: 0,
+							};
+							newStats.total += 1;
+							switch (guesses) {
+								case 1:
+									newStats.oneGuess += 1;
+									break;
+								case 2:
+									newStats.twoGuess += 1;
+									break;
+								case 3:
+									newStats.threeGuess += 1;
+									break;
+								case 4:
+									newStats.fourGuess += 1;
+									break;
+								default:
+									break;
+							}
+							localStorage.setItem('stats', JSON.stringify(newStats));
+						}
 					} else if (guesses === 4) {
 						setOutOfGuesses(true);
 						setGuessBoxMessage('Out of guesses, try again tomorrow!');
 						setShowOutOfGuessesModal(true);
 						localStorage.setItem('outOfGuesses', JSON.stringify(true));
+						const stats = JSON.parse(localStorage.getItem('stats')) || null;
+						if (stats) {
+							// increment total
+							stats.total += 1;
+							localStorage.setItem('stats', JSON.stringify(stats));
+						} else {
+							const newStats = {
+								total: 0,
+								oneGuess: 0,
+								twoGuess: 0,
+								threeGuess: 0,
+								fourGuess: 0,
+							};
+							newStats.total += 1;
+							localStorage.setItem('stats', JSON.stringify(newStats));
+						}
 					} else {
 						setGuesses(guesses + 1);
 					}
@@ -271,19 +437,19 @@ function App() {
 
 	return (
 		<div className='flex flex-col items-center justify-center'>
-			<div className=' w-full text-center mt-4 flex justify-center items-center'>
-				<h2 className='text-3xl font-light text-yellow-500 ml-10 text-center'>
+			<div className=' w-full text-center mt-4 flex justify-center items-center min-w-96 mr-4'>
+				<h2 className='lg:text-3xl text-2xl font-light text-yellow-500 ml-10 text-center'>
 					{todayDate}
 				</h2>
 				<button
-					className='ml-10 text-2xl text-black bg-white rounded-xl pr-5 pl-5 pt-3 pb-3'
+					className='ml-8 text-lg lg:text-2xl text-black bg-white rounded-xl pr-3 pl-3 pt-3 pb-3'
 					onClick={toggleModal}
 					aria-label='Information about the game'
 				>
-					?
+					❔
 				</button>
 				<button
-					className='ml-2 text-2xl text-black bg-white rounded-xl pr-3 pl-3 pt-3 pb-3'
+					className='ml-2 text-lg lg:text-2xl text-black bg-white rounded-xl pr-3 pl-3 pt-3 pb-3'
 					onClick={toggleStreakModal}
 					aria-label='Streak Counter'
 				>
@@ -338,20 +504,98 @@ function App() {
 
 			{isStreakModalActive && (
 				<div className={`modal ${isStreakModalActive ? 'is-active' : ''}`}>
-					<div className='modal-background' onClick={toggleStreakModal}></div>
-					<div className='modal-content'>
-						<div className='box p-6'>
-							<div className='text-2xl font-semibold mb-4'>Streak Counter</div>
-							<p className='text-lg'>
-								You have a daily streak of <span>{streak}</span> correct
-								guesses!
-							</p>
+					<div
+						className='modal-background'
+						onClick={toggleStreakModal}
+						aria-label='Close streak modal'
+					></div>
+					<div className='modal-content flex justify-center items-center'>
+						<div className='box bg-white max-w-lg w-full rounded-lg p-6 shadow-lg'>
+							<h2 className='text-2xl font-bold mb-4 text-center'>
+								Your Stats
+							</h2>
+							<ul className='mb-4 flex items-center justify-center gap-10'>
+								<li>
+									<div className='text-lg'>{totalGames}</div>
+									<div className='flex items-center'>Played</div>
+								</li>
+								<li>
+									<div className='text-lg'>
+										{((oneGuessWins +
+											twoGuessWins +
+											threeGuessWins +
+											fourGuessWins) /
+											totalGames) *
+											100}
+									</div>
+									<div className='flex items-center'>Win %</div>
+								</li>
+								<li>
+									<div className='text-lg'>{streak}</div>
+									<div className='flex items-center'>Streak</div>
+								</li>
+								<li>
+									<div className='text-lg'>{bestStreak}</div>
+									<div className='flex items-center'>Best Streak</div>
+								</li>
+							</ul>
+							<div className='flex flex-col text-left'>
+								<h3 className='text-xl font-semibold mb-2'>
+									Guess Distribution
+								</h3>
+								<ul className='space-y-2'>
+									<li className='flex items-center'>
+										<span className='w-6'>1:</span>
+										<div
+											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 max-w-96'
+											style={{
+												width: `${(oneGuessWins / totalGames) * 700 + 20}px`,
+											}}
+										>
+											{oneGuessWins}
+										</div>
+									</li>
+									<li className='flex items-center'>
+										<span className='w-6'>2:</span>
+										<div
+											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 max-w-96'
+											style={{
+												width: `${(twoGuessWins / totalGames) * 700 + 20}px`,
+											}}
+										>
+											{twoGuessWins}
+										</div>
+									</li>
+									<li className='flex items-center'>
+										<span className='w-6'>3:</span>
+										<div
+											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 max-w-96'
+											style={{
+												width: `${(threeGuessWins / totalGames) * 700 + 20}px`,
+											}}
+										>
+											{threeGuessWins}
+										</div>
+									</li>
+									<li className='flex items-center'>
+										<span className='w-6'>4:</span>
+										<div
+											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 max-w-96'
+											style={{
+												width: `${(fourGuessWins / totalGames) * 700 + 20}px`,
+											}}
+										>
+											{fourGuessWins}
+										</div>
+									</li>
+								</ul>
+							</div>
 						</div>
 					</div>
 					<button
 						className='modal-close is-large'
 						onClick={toggleStreakModal}
-						aria-label='close'
+						aria-label='Close'
 					></button>
 				</div>
 			)}
@@ -359,8 +603,8 @@ function App() {
 			{isModalActive && (
 				<div className={`modal ${isModalActive ? 'is-active' : ''}`}>
 					<div className='modal-background' onClick={toggleModal}></div>
-					<div className='modal-content'>
-						<div className='box p-6'>
+					<div className='modal-content flex justify-center items-center'>
+						<div className='box p-6 bg-white max-w-lg w-full rounded-lg sm: ml-10 mr-10'>
 							<div className='text-2xl font-semibold mb-4'>How to Play</div>
 
 							{/* Release Date Section */}
@@ -371,18 +615,17 @@ function App() {
 								<li className='flex items-center gap-2'>
 									<div className='w-2 h-2 bg-black rounded-full'></div>
 									<p>
-										A guess with the same release year will be{' '}
-										<span className='text-green-500 font-semibold'>green</span>.
+										Same year:{' '}
+										<span className='text-green-500 font-semibold'>green</span>
 									</p>
 								</li>
 								<li className='flex items-center gap-2'>
 									<div className='w-2 h-2 bg-black rounded-full'></div>
 									<p>
-										A guess within 2 years of the release year will be{' '}
+										Within 2 years:{' '}
 										<span className='text-yellow-300 font-semibold'>
 											yellow
 										</span>
-										.
 									</p>
 								</li>
 							</ul>
@@ -395,18 +638,17 @@ function App() {
 								<li className='flex items-center gap-2'>
 									<div className='w-2 h-2 bg-black rounded-full'></div>
 									<p>
-										A guess with the exact same average rating will be{' '}
-										<span className='text-green-500 font-semibold'>green</span>.
+										Same rating:{' '}
+										<span className='text-green-500 font-semibold'>green</span>
 									</p>
 								</li>
 								<li className='flex items-center gap-2'>
 									<div className='w-2 h-2 bg-black rounded-full'></div>
 									<p>
-										A guess within 0.2 of the actual average rating will be{' '}
+										Within 0.2:{' '}
 										<span className='text-yellow-300 font-semibold'>
 											yellow
 										</span>
-										.
 									</p>
 								</li>
 							</ul>
@@ -419,18 +661,17 @@ function App() {
 								<li className='flex items-center gap-2'>
 									<div className='w-2 h-2 bg-black rounded-full'></div>
 									<p>
-										A guess that shares the main genre will be{' '}
-										<span className='text-green-500 font-semibold'>green</span>.
+										Same main genre:{' '}
+										<span className='text-green-500 font-semibold'>green</span>
 									</p>
 								</li>
 								<li className='flex items-center gap-2'>
 									<div className='w-2 h-2 bg-black rounded-full'></div>
 									<p>
-										A guess that shares a minor genre will be{' '}
+										Shares a minor genre:{' '}
 										<span className='text-yellow-300 font-semibold'>
 											yellow
 										</span>
-										.
 									</p>
 								</li>
 							</ul>
@@ -443,8 +684,8 @@ function App() {
 								<li className='flex items-center gap-2'>
 									<div className='w-2 h-2 bg-black rounded-full'></div>
 									<p>
-										If the movie has the same director, the tile will be{' '}
-										<span className='text-green-500 font-semibold'>green</span>.
+										Same director:{' '}
+										<span className='text-green-500 font-semibold'>green</span>
 									</p>
 								</li>
 							</ul>
@@ -458,7 +699,7 @@ function App() {
 				</div>
 			)}
 
-			<div className='max-w-3xl pl-10 pr-10 pt-4 pb-2 font-sans text-center bg-white rounded-lg shadow-md mt-16 mb-8 min-w-80'>
+			<div className='max-w-3xl pl-10 pr-10 pt-4 pb-2 font-sans text-center bg-white rounded-lg shadow-md mt-16 mb-8 min-w-[360px]'>
 				{error && <p className='text-red-500'>{error}</p>}
 				{movie ? (
 					<div>
@@ -486,12 +727,12 @@ function App() {
 					disabled={correctGuess || outOfGuesses} // Disable input if correct guess is true
 				/>
 				{filteredMovies.length > 0 && (
-					<ul className='w-full max-h-48 border border-gray-300 rounded bg-white shadow-lg z-10 absolute left-0 top-full mt-1 overflow-y-auto'>
+					<ul className='w-full max-h-48 border border-gray-300 rounded bg-white shadow-lg z-10 absolute top-full mt-1 overflow-y-auto min-w-80'>
 						{filteredMovies.map((movie, index) => (
 							<li
 								key={index}
 								onClick={() => handleSelectMovie(movie)}
-								className='p-2 cursor-pointer hover:bg-gray-200'
+								className='p-2 cursor-pointer hover:bg-gray-200 text-sm mb-2 border-b-2'
 							>
 								<p className='text-black'>{movie}</p>
 							</li>
@@ -500,7 +741,7 @@ function App() {
 				)}
 			</div>
 
-			<table className='w-full mt-10 border-separate border-spacing-x-2 text-gray-300'>
+			<table className='w-full mt-10 border-separate border-spacing-x-2 text-gray-300 min-w-[370px] mr-2 ml-2'>
 				<thead>
 					<tr className=''>
 						<td className='w-1/4 p-4 border border-gray-400 rounded-l-lg'>
@@ -515,7 +756,7 @@ function App() {
 				</thead>
 			</table>
 
-			<table className='w-full mt-6 border-separate border-spacing-x-1 border-spacing-y-2'>
+			<table className='w-full mt-6 border-separate border-spacing-x-1 border-spacing-y-2 min-w-[370px] pr-2 pl-2'>
 				<tbody>
 					{guessRows.map((row, rowIndex) => (
 						<tr key={rowIndex}>
@@ -548,11 +789,11 @@ function App() {
 									return (
 										<td
 											key={colIndex}
-											className={`w-1/4 h-14 p-4 border-gray-200 rounded-lg text-black min-w-20 ${bgColor} ${
+											className={`w-1/4 h-16 xl:h-14 p-4 border-gray-200 rounded-lg text-black min-w-20 text-sm ${bgColor} ${
 												flipStatus[`${rowIndex}-${col}`] ? 'flip' : ''
 											}`}
 										>
-											<div className='flex justify-center items-center h-full text-center overflow-hidden'>
+											<div className='flex justify-center items-center h-full text-center overflow-hidden text'>
 												{row ? row[col] : ''}
 											</div>
 										</td>
