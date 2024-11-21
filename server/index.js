@@ -15,7 +15,7 @@ app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
 // Use routes
-app.use('/api/movies', movieRoutes);
+app.use('/api/movie', movieRoutes);
 app.use('/api', answerRoutes);
 
 app.get('/', (req, res) => {
