@@ -29,9 +29,7 @@ const allowCors = (fn) => async (req, res) => {
 
 const handler = async (req, res) => {
 	if (req.method === 'OPTIONS') {
-		return res.status(200).json({
-			body: 'OK',
-		});
+		return res.status(200).end();
 	}
 
 	const { method, query } = req;
