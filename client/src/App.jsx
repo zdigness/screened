@@ -71,6 +71,9 @@ function App() {
 		return savedStats?.fourGuess || 0;
 	});
 
+	// hint
+	const [hintRevealed, setHintRevealed] = useState(false); // New state for hint visibility
+
 	// load game
 	useEffect(() => {
 		// grab dates
@@ -79,6 +82,28 @@ function App() {
 
 		// check if its a new day
 		if (lastPlayDate !== todayDate) {
+			// reset streak data if it's a new day
+			const savedStreakData = JSON.parse(localStorage.getItem('streakData'));
+			const yesterday = getMSTDateStringYesterday();
+			if (savedStreakData) {
+				// if last play date isnt today or yesterday, reset streak
+				console.log('lastPlayDate:', lastPlayDate);
+				console.log('todayDate:', todayDate);
+				console.log('yesterday:', yesterday);
+				if (lastPlayDate !== todayDate && lastPlayDate !== yesterday) {
+					// set streak to 0
+					setStreak(0);
+					localStorage.setItem(
+						'streakData',
+						JSON.stringify({
+							streak: 0,
+							bestStreak: savedStreakData.bestStreak,
+							lastWinDate: savedStreakData.lastWinDate,
+						})
+					);
+				}
+			}
+
 			// clear daily game data (new day)
 			localStorage.removeItem('gameState');
 			setGuesses(1);
@@ -119,7 +144,7 @@ function App() {
 		}
 
 		// fetch today's movie
-		// fetch('http://localhost:5000/api/movie/today', {
+		//fetch('http://localhost:5000/api/movie/today', {
 		fetch(`${BASE_URL}/api/movie?endpoint=today`, {
 			method: 'GET',
 			headers: { 'Content-Type': 'application/json' },
@@ -240,13 +265,6 @@ function App() {
 		const halfStar = rating % 1 !== 0 ? '⭐️' : '';
 		return '⭐️'.repeat(fullStars) + halfStar;
 	};
-
-	const todayDate = new Date().toLocaleDateString('en-US', {
-		weekday: 'long',
-		year: 'numeric',
-		month: 'long',
-		day: 'numeric',
-	});
 
 	const handleInputChange = (e) => {
 		const input = e.target.value;
@@ -435,26 +453,67 @@ function App() {
 		return date.toISOString().split('T')[0];
 	}
 
+	function getMSTDateStringYesterday() {
+		const date = new Date();
+		const offsetMST = -7; // MST is UTC-7
+		date.setHours(date.getHours() + offsetMST); // Adjust by -7 hours
+		date.setDate(date.getDate() - 1); // Get yesterday's date
+
+		// Format to 'YYYY-MM-DD'
+		return date.toISOString().split('T')[0];
+	}
+
+	const revealHint = () => {
+		setHintRevealed(true);
+	};
+
 	return (
 		<div className='flex flex-col items-center justify-center'>
-			<div className=' w-full text-center mt-4 flex justify-center items-center min-w-96 mr-4'>
-				<h2 className='lg:text-3xl text-2xl font-light text-yellow-500 ml-10 text-center'>
-					{todayDate}
-				</h2>
-				<button
-					className='ml-8 text-lg lg:text-2xl text-black bg-white rounded-xl pr-3 pl-3 pt-3 pb-3'
-					onClick={toggleModal}
-					aria-label='Information about the game'
-				>
-					❔
-				</button>
-				<button
-					className='ml-2 text-lg lg:text-2xl text-black bg-white rounded-xl pr-3 pl-3 pt-3 pb-3'
-					onClick={toggleStreakModal}
-					aria-label='Streak Counter'
-				>
-					🔥
-				</button>
+			<div className=' w-full text-center flex justify-center items-center min-w-96 mr-4'>
+				<div className=''>
+					<h2 className='lg:text-4xl text-3xl font-light text-yellow-500 mb-4 ml-10 mr-10 text-center'>
+						🎥
+					</h2>
+					<h2 className='lg:text-3xl text-3xl font-light text-yellow-500 ml-10 mr-10 text-center'>
+						Screened
+					</h2>
+				</div>
+				<div className='flex flex-col items-center justify-center '>
+					<div className='w-full text-center flex flex-col items-center'>
+						<div className='flex justify-center items-center mb-4'>
+							<button
+								className='ml-2 text-lg lg:text-2xl text-black bg-white rounded-xl pr-3 pl-3 pt-3 pb-3'
+								onClick={toggleModal}
+								aria-label='Information about the game'
+							>
+								❔
+							</button>
+							<button
+								className='ml-2 text-lg lg:text-2xl text-black bg-white rounded-xl pr-3 pl-3 pt-3 pb-3'
+								onClick={toggleStreakModal}
+								aria-label='Streak Counter'
+							>
+								🔥
+							</button>
+						</div>
+						{!hintRevealed ? (
+							<button
+								className='bg-blue-500 hover:bg-blue-700 text-white font-bold rounded px-4 py-2'
+								onClick={revealHint}
+							>
+								<p className='text-md font-semibold'>Reveal Hint</p>
+							</button>
+						) : (
+							<div className='hint bg-gray-100 border border-gray-300 px-4 py-2 rounded shadow-md'>
+								<p className='text-md font-semibold'>
+									<span className='text-blue-600'>
+										{correctMovieData.actor}
+									</span>
+								</p>
+							</div>
+						)}
+					</div>
+				</div>
 			</div>
 
 			{/* Modal for Correct Guess */}
@@ -510,23 +569,33 @@ function App() {
 						aria-label='Close streak modal'
 					></div>
 					<div className='modal-content flex justify-center items-center'>
-						<div className='box bg-white max-w-lg w-full rounded-lg p-6 shadow-lg'>
+						<div className='box bg-white max-w-lg w-full rounded-lg sm:p-6 p-4 shadow-lg mr-2 ml-2'>
 							<h2 className='text-2xl font-bold mb-4 text-center'>
 								Your Stats
 							</h2>
-							<ul className='mb-4 flex items-center justify-center gap-10'>
+							<ul className='mb-4 flex items-center justify-center sm:gap-10 gap-10'>
 								<li>
 									<div className='text-lg'>{totalGames}</div>
 									<div className='flex items-center'>Played</div>
 								</li>
 								<li>
 									<div className='text-lg'>
-										{((oneGuessWins +
-											twoGuessWins +
-											threeGuessWins +
-											fourGuessWins) /
-											totalGames) *
-											100}
+										{(isNaN(
+											((oneGuessWins +
+												twoGuessWins +
+												threeGuessWins +
+												fourGuessWins) /
+												totalGames) *
+												100
+										)
+											? 0
+											: ((oneGuessWins +
+													twoGuessWins +
+													threeGuessWins +
+													fourGuessWins) /
+													totalGames) *
+											  100
+										).toFixed(0)}
 									</div>
 									<div className='flex items-center'>Win %</div>
 								</li>
@@ -540,14 +609,12 @@ function App() {
 								</li>
 							</ul>
 							<div className='flex flex-col text-left'>
-								<h3 className='text-xl font-semibold mb-2'>
-									Guess Distribution
-								</h3>
+								<h3 className='text-xl font-semibold mb-2'>Win Distribution</h3>
 								<ul className='space-y-2'>
 									<li className='flex items-center'>
 										<span className='w-6'>1:</span>
 										<div
-											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 max-w-96'
+											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 sm:max-w-96 max-w-60'
 											style={{
 												width: `${(oneGuessWins / totalGames) * 700 + 20}px`,
 											}}
@@ -558,7 +625,7 @@ function App() {
 									<li className='flex items-center'>
 										<span className='w-6'>2:</span>
 										<div
-											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 max-w-96'
+											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 sm:max-w-96 max-w-60'
 											style={{
 												width: `${(twoGuessWins / totalGames) * 700 + 20}px`,
 											}}
@@ -569,7 +636,7 @@ function App() {
 									<li className='flex items-center'>
 										<span className='w-6'>3:</span>
 										<div
-											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 max-w-96'
+											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 sm:max-w-96 max-w-60'
 											style={{
 												width: `${(threeGuessWins / totalGames) * 700 + 20}px`,
 											}}
@@ -580,7 +647,7 @@ function App() {
 									<li className='flex items-center'>
 										<span className='w-6'>4:</span>
 										<div
-											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 max-w-96'
+											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 sm:max-w-96 max-w-60'
 											style={{
 												width: `${(fourGuessWins / totalGames) * 700 + 20}px`,
 											}}
@@ -604,8 +671,10 @@ function App() {
 				<div className={`modal ${isModalActive ? 'is-active' : ''}`}>
 					<div className='modal-background' onClick={toggleModal}></div>
 					<div className='modal-content flex justify-center items-center'>
-						<div className='box p-6 bg-white max-w-lg w-full rounded-lg sm: ml-10 mr-10'>
-							<div className='text-2xl font-semibold mb-4'>How to Play</div>
+						<div className='box p-6 bg-white max-w-lg w-full rounded-lg mr-2 ml-2'>
+							<h2 className='text-2xl font-bold mb-4 text-center'>
+								How to Play
+							</h2>
 
 							{/* Release Date Section */}
 							<div className='text-left text-lg font-medium mb-2'>
@@ -699,7 +768,7 @@ function App() {
 				</div>
 			)}
 
-			<div className='max-w-3xl pl-10 pr-10 pt-4 pb-2 font-sans text-center bg-white rounded-lg shadow-md mt-16 mb-8 min-w-[360px]'>
+			<div className='max-w-3xl pl-10 pr-10 pt-4 pb-2 font-sans text-center bg-white rounded-lg shadow-md mt-8 mb-8 min-w-[360px]'>
 				{error && <p className='text-red-500'>{error}</p>}
 				{movie ? (
 					<div>
@@ -728,15 +797,32 @@ function App() {
 				/>
 				{filteredMovies.length > 0 && (
 					<ul className='w-full max-h-48 border border-gray-300 rounded bg-white shadow-lg z-10 absolute top-full mt-1 overflow-y-auto min-w-80'>
-						{filteredMovies.map((movie, index) => (
-							<li
-								key={index}
-								onClick={() => handleSelectMovie(movie)}
-								className='p-2 cursor-pointer hover:bg-gray-200 text-sm mb-2 border-b-2'
-							>
-								<p className='text-black'>{movie}</p>
-							</li>
-						))}
+						{/* Guessed Movies in Red */}
+						{guessRows.map((guess, index) =>
+							guess ? (
+								<li
+									key={`guessed-${index}`}
+									className='p-2 cursor-default text-red-500 text-sm mb-2 border-b-2'
+								>
+									{guess.title}
+								</li>
+							) : null
+						)}
+
+						{/* Remaining Filtered Movies */}
+						{filteredMovies
+							.filter(
+								(movie) => !guessRows.some((guess) => guess?.title === movie)
+							)
+							.map((movie, index) => (
+								<li
+									key={`filtered-${index}`}
+									onClick={() => handleSelectMovie(movie)}
+									className='p-2 cursor-pointer hover:bg-gray-200 text-black text-sm mb-2 border-b-2'
+								>
+									{movie}
+								</li>
+							))}
 					</ul>
 				)}
 			</div>
@@ -756,7 +842,7 @@ function App() {
 				</thead>
 			</table>
 
-			<table className='w-full mt-6 border-separate border-spacing-x-1 border-spacing-y-2 min-w-[370px] pr-2 pl-2'>
+			<table className='w-full mt-5 border-separate border-spacing-x-1 border-spacing-y-2 min-w-[370px] pr-2 pl-2'>
 				<tbody>
 					{guessRows.map((row, rowIndex) => (
 						<tr key={rowIndex}>
