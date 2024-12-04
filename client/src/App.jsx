@@ -280,14 +280,29 @@ function App() {
 			.filter((row) => row && row.title)
 			.map((row) => row.title);
 
-		// Filter out guessed movies
-		const filtered = allMovies.filter(
+		// Filter movies that start with the input string (case insensitive)
+		const startsWithMatches = allMovies.filter(
 			(movie) =>
-				movie.toLowerCase().includes(input.toLowerCase()) &&
+				movie.toLowerCase().startsWith(input.toLowerCase()) &&
 				!guessedMovies.includes(movie)
 		);
 
-		setFilteredMovies(filtered);
+		// Filter movies that contain the input string anywhere (case insensitive)
+		const containsMatches = allMovies.filter((movie) => {
+			const lowerCaseMovie = movie.toLowerCase();
+			const lowerCaseInput = input.toLowerCase();
+
+			return (
+				lowerCaseMovie.includes(lowerCaseInput) &&
+				!lowerCaseMovie.includes(` the ${lowerCaseInput}`) && // Exclude matches with ' the '
+				!lowerCaseMovie.endsWith(` the`) && // Exclude matches ending in ' the'
+				!guessedMovies.includes(movie) &&
+				!startsWithMatches.includes(movie) // Avoid duplicates
+			);
+		});
+
+		// Combine both matches, prioritizing the "starts with" matches
+		setFilteredMovies([...startsWithMatches, ...containsMatches]);
 	};
 
 	const handleSelectMovie = (selectedMovie) => {
