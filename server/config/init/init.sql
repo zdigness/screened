@@ -16,6 +16,6 @@ CREATE TABLE IF NOT EXISTS movies (
 
 -- Import data from the CSV file
 COPY movies (name, director, genre_1, genre_2, actor, release_date, average_rating, reviewer_name, review_rating, review_text, poster_url, game_date)
-FROM '/docker-entrypoint-initdb.d/movies_data.csv'
+FROM '/docker-entrypoint-initdb.d/test_data.csv'
 DELIMITER ','
 CSV HEADER;

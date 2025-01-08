@@ -3,6 +3,13 @@ import { useState, useEffect } from 'react';
 import './App.css'; // Ensure Tailwind and custom CSS are included
 import BASE_URL from './config';
 
+// components
+import Header from './components/Header';
+import CorrectGuessModal from './components/CorrectGuessModal';
+import LoseModal from './components/LoseModal';
+import StatsModal from './components/StatsModal';
+import RulesModal from './components/RulesModal';
+
 function App() {
 	const [movie, setMovie] = useState(null);
 	const [error, setError] = useState(null);
@@ -144,8 +151,8 @@ function App() {
 		}
 
 		// fetch today's movie
-		//fetch('http://localhost:5000/api/movie/today', {
-		fetch(`${BASE_URL}/api/movie?endpoint=today`, {
+		fetch('http://localhost:5000/api/movie/today', {
+			//fetch(`${BASE_URL}/api/movie?endpoint=today`, {
 			method: 'GET',
 			headers: { 'Content-Type': 'application/json' },
 		})
@@ -169,8 +176,8 @@ function App() {
 			});
 
 		// fetch all movies
-		//fetch('http://localhost:5000/api/movie/', {
-		fetch(`${BASE_URL}/api/movie`, {
+		fetch('http://localhost:5000/api/movie/', {
+			//fetch(`${BASE_URL}/api/movie`, {
 			method: 'GET',
 			headers: { 'Content-Type': 'application/json' },
 		})
@@ -324,8 +331,8 @@ function App() {
 		}
 
 		// dev
-		// fetch('http://localhost:5000/api/submit-answer', {
-		fetch(`${BASE_URL}/api/answer`, {
+		fetch('http://localhost:5000/api/submit-answer', {
+			//fetch(`${BASE_URL}/api/answer`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ answer: selectedAnswer }),
@@ -484,304 +491,38 @@ function App() {
 
 	return (
 		<div className='flex flex-col items-center justify-center'>
-			<div className=' w-full text-center flex justify-center items-center min-w-96 mr-4'>
-				<div className=''>
-					<h2 className='lg:text-4xl text-3xl font-light text-yellow-500 mb-4 ml-10 mr-10 text-center'>
-						🎥
-					</h2>
-					<h2 className='lg:text-3xl text-3xl font-light text-yellow-500 ml-10 mr-10 text-center'>
-						Screened
-					</h2>
-				</div>
-				<div className='flex flex-col items-center justify-center '>
-					<div className='w-full text-center flex flex-col items-center'>
-						<div className='flex justify-center items-center mb-4'>
-							<button
-								className='ml-2 text-lg lg:text-2xl text-black bg-white rounded-xl pr-3 pl-3 pt-3 pb-3'
-								onClick={toggleModal}
-								aria-label='Information about the game'
-							>
-								❔
-							</button>
-							<button
-								className='ml-2 text-lg lg:text-2xl text-black bg-white rounded-xl pr-3 pl-3 pt-3 pb-3'
-								onClick={toggleStreakModal}
-								aria-label='Streak Counter'
-							>
-								🔥
-							</button>
-						</div>
-						{!hintRevealed ? (
-							<button
-								className='bg-blue-500 hover:bg-blue-700 text-white font-bold rounded px-4 py-2'
-								onClick={revealHint}
-							>
-								<p className='text-md font-semibold'>Reveal Hint</p>
-							</button>
-						) : (
-							<div className='hint bg-gray-100 border border-gray-300 px-4 py-2 rounded shadow-md'>
-								<p className='text-md font-semibold'>
-									<span className='text-blue-600'>
-										{correctMovieData.actor}
-									</span>
-								</p>
-							</div>
-						)}
-					</div>
-				</div>
-			</div>
+			<Header
+				toggleModal={toggleModal}
+				toggleStreakModal={toggleStreakModal}
+				revealHint={revealHint}
+				correctMovieData={correctMovieData}
+				hintRevealed={hintRevealed}
+			/>
 
-			{/* Modal for Correct Guess */}
-			{showCorrectModal && (
-				<div className='modal is-active'>
-					<div className='modal-background' onClick={closeCorrectModal}></div>
-					<div className='modal-content'>
-						<div className='box flex flex-row gap-14 items-center'>
-							<div className='poster'>
-								<img src={correctMovieData.poster_url} alt='Movie Poster' />
-							</div>
-							<div className='info flex flex-col items-center gap-4 text-2xl'>
-								<p>
-									{correctMovieData.title}: {correctMovieData.release_date}
-								</p>
-								<p>Directed by: {correctMovieData.director}</p>
-								<p>Starring: {correctMovieData.actor}</p>
-							</div>
-						</div>
-					</div>
-				</div>
-			)}
-
-			{/* Modal for Out of Guesses */}
-			{showOutOfGuessesModal && (
-				<div className='modal is-active'>
-					<div
-						className='modal-background'
-						onClick={closeOutOfGuessesModal}
-					></div>
-					<div className='modal-content'>
-						<div className='box flex flex-row gap-14 items-center'>
-							<div className='poster'>
-								<img src={correctMovieData.poster_url} alt='Movie Poster' />
-							</div>
-							<div className='info flex flex-col items-center gap-4 text-2xl'>
-								<p>
-									{correctMovieData.title}: {correctMovieData.release_date}
-								</p>
-								<p>Directed by: {correctMovieData.director}</p>
-								<p>Starring: {correctMovieData.actor}</p>
-							</div>
-						</div>
-					</div>
-				</div>
-			)}
-
-			{isStreakModalActive && (
-				<div className={`modal ${isStreakModalActive ? 'is-active' : ''}`}>
-					<div
-						className='modal-background'
-						onClick={toggleStreakModal}
-						aria-label='Close streak modal'
-					></div>
-					<div className='modal-content flex justify-center items-center'>
-						<div className='box bg-white max-w-lg w-full rounded-lg sm:p-6 p-4 shadow-lg mr-2 ml-2'>
-							<h2 className='text-2xl font-bold mb-4 text-center'>
-								Your Stats
-							</h2>
-							<ul className='mb-4 flex items-center justify-center sm:gap-10 gap-10'>
-								<li>
-									<div className='text-lg'>{totalGames}</div>
-									<div className='flex items-center'>Played</div>
-								</li>
-								<li>
-									<div className='text-lg'>
-										{(isNaN(
-											((oneGuessWins +
-												twoGuessWins +
-												threeGuessWins +
-												fourGuessWins) /
-												totalGames) *
-												100
-										)
-											? 0
-											: ((oneGuessWins +
-													twoGuessWins +
-													threeGuessWins +
-													fourGuessWins) /
-													totalGames) *
-											  100
-										).toFixed(0)}
-									</div>
-									<div className='flex items-center'>Win %</div>
-								</li>
-								<li>
-									<div className='text-lg'>{streak}</div>
-									<div className='flex items-center'>Streak</div>
-								</li>
-								<li>
-									<div className='text-lg'>{bestStreak}</div>
-									<div className='flex items-center'>Best Streak</div>
-								</li>
-							</ul>
-							<div className='flex flex-col text-left'>
-								<h3 className='text-xl font-semibold mb-2'>Win Distribution</h3>
-								<ul className='space-y-2'>
-									<li className='flex items-center'>
-										<span className='w-6'>1:</span>
-										<div
-											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 sm:max-w-96 max-w-60'
-											style={{
-												width: `${(oneGuessWins / totalGames) * 700 + 20}px`,
-											}}
-										>
-											{oneGuessWins}
-										</div>
-									</li>
-									<li className='flex items-center'>
-										<span className='w-6'>2:</span>
-										<div
-											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 sm:max-w-96 max-w-60'
-											style={{
-												width: `${(twoGuessWins / totalGames) * 700 + 20}px`,
-											}}
-										>
-											{twoGuessWins}
-										</div>
-									</li>
-									<li className='flex items-center'>
-										<span className='w-6'>3:</span>
-										<div
-											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 sm:max-w-96 max-w-60'
-											style={{
-												width: `${(threeGuessWins / totalGames) * 700 + 20}px`,
-											}}
-										>
-											{threeGuessWins}
-										</div>
-									</li>
-									<li className='flex items-center'>
-										<span className='w-6'>4:</span>
-										<div
-											className='bg-gray-500 h-6 rounded-md flex items-center justify-center text-white font-bold min-w-10 sm:max-w-96 max-w-60'
-											style={{
-												width: `${(fourGuessWins / totalGames) * 700 + 20}px`,
-											}}
-										>
-											{fourGuessWins}
-										</div>
-									</li>
-								</ul>
-							</div>
-						</div>
-					</div>
-					<button
-						className='modal-close is-large'
-						onClick={toggleStreakModal}
-						aria-label='Close'
-					></button>
-				</div>
-			)}
-
-			{isModalActive && (
-				<div className={`modal ${isModalActive ? 'is-active' : ''}`}>
-					<div className='modal-background' onClick={toggleModal}></div>
-					<div className='modal-content flex justify-center items-center'>
-						<div className='box p-6 bg-white max-w-lg w-full rounded-lg mr-2 ml-2'>
-							<h2 className='text-2xl font-bold mb-4 text-center'>
-								How to Play
-							</h2>
-
-							{/* Release Date Section */}
-							<div className='text-left text-lg font-medium mb-2'>
-								Release Date
-							</div>
-							<ul className='space-y-2'>
-								<li className='flex items-center gap-2'>
-									<div className='w-2 h-2 bg-black rounded-full'></div>
-									<p>
-										Same year:{' '}
-										<span className='text-green-500 font-semibold'>green</span>
-									</p>
-								</li>
-								<li className='flex items-center gap-2'>
-									<div className='w-2 h-2 bg-black rounded-full'></div>
-									<p>
-										Within 2 years:{' '}
-										<span className='text-yellow-300 font-semibold'>
-											yellow
-										</span>
-									</p>
-								</li>
-							</ul>
-
-							{/* Average Rating Section */}
-							<div className='text-left text-lg font-medium mt-4 mb-2'>
-								Average Rating
-							</div>
-							<ul className='space-y-2'>
-								<li className='flex items-center gap-2'>
-									<div className='w-2 h-2 bg-black rounded-full'></div>
-									<p>
-										Same rating:{' '}
-										<span className='text-green-500 font-semibold'>green</span>
-									</p>
-								</li>
-								<li className='flex items-center gap-2'>
-									<div className='w-2 h-2 bg-black rounded-full'></div>
-									<p>
-										Within 0.2:{' '}
-										<span className='text-yellow-300 font-semibold'>
-											yellow
-										</span>
-									</p>
-								</li>
-							</ul>
-
-							{/* Genre Section */}
-							<div className='text-left text-lg font-medium mb-2 mt-4'>
-								Genre
-							</div>
-							<ul className='space-y-2'>
-								<li className='flex items-center gap-2'>
-									<div className='w-2 h-2 bg-black rounded-full'></div>
-									<p>
-										Same main genre:{' '}
-										<span className='text-green-500 font-semibold'>green</span>
-									</p>
-								</li>
-								<li className='flex items-center gap-2'>
-									<div className='w-2 h-2 bg-black rounded-full'></div>
-									<p>
-										Shares a minor genre:{' '}
-										<span className='text-yellow-300 font-semibold'>
-											yellow
-										</span>
-									</p>
-								</li>
-							</ul>
-
-							{/* Director Section */}
-							<div className='text-left text-lg font-medium mt-4 mb-2'>
-								Director
-							</div>
-							<ul className='space-y-2'>
-								<li className='flex items-center gap-2'>
-									<div className='w-2 h-2 bg-black rounded-full'></div>
-									<p>
-										Same director:{' '}
-										<span className='text-green-500 font-semibold'>green</span>
-									</p>
-								</li>
-							</ul>
-						</div>
-					</div>
-					<button
-						className='modal-close is-large'
-						onClick={toggleModal}
-						aria-label='close'
-					></button>
-				</div>
-			)}
+			{/* Modals */}
+			<CorrectGuessModal
+				showCorrectModal={showCorrectModal}
+				closeCorrectModal={closeCorrectModal}
+				correctMovieData={correctMovieData}
+			/>
+			<LoseModal
+				showOutOfGuessesModal={showOutOfGuessesModal}
+				closeOutOfGuessesModal={closeOutOfGuessesModal}
+				correctMovieData={correctMovieData}
+			/>
+			<StatsModal
+				showStatsModal={true}
+				isStreakModalActive={isStreakModalActive}
+				toggleStreakModal={toggleStreakModal}
+				totalGames={totalGames}
+				oneGuessWins={oneGuessWins}
+				twoGuessWins={twoGuessWins}
+				threeGuessWins={threeGuessWins}
+				fourGuessWins={fourGuessWins}
+				streak={streak}
+				bestStreak={bestStreak}
+			/>
+			<RulesModal isModalActive={isModalActive} toggleModal={toggleModal} />
 
 			<div className='max-w-3xl pl-10 pr-10 pt-4 pb-2 font-sans text-center bg-white rounded-lg shadow-md mt-8 mb-8 min-w-[360px]'>
 				{error && <p className='text-red-500'>{error}</p>}
