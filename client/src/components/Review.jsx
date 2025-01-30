@@ -1,7 +1,8 @@
 // src/components/MovieReview.jsx
 import PropTypes from 'prop-types';
+import { getStarRating } from '../utils/ratingUtils';
 
-function Review({ movie, todayMovieError, getStarRating }) {
+function Review({ movie, todayMovieError }) {
 	return (
 		<div className='max-w-3xl pl-10 pr-10 pt-4 pb-2 font-sans text-center bg-white rounded-lg shadow-md mt-8 mb-8 min-w-[360px]'>
 			{todayMovieError && <p className='text-red-500'>{todayMovieError}</p>}

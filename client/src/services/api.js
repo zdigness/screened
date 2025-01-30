@@ -9,3 +9,13 @@ export const fetchAllMovies = async () => {
 	if (!response.ok) throw new Error('Failed to fetch all movies');
 	return response.json();
 };
+
+export const submitAnswer = async (selectedAnswer) => {
+	const response = await fetch('http://localhost:5000/api/submit-answer', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ answer: selectedAnswer }),
+	});
+	if (!response.ok) throw new Error('Failed to submit answer');
+	return response.json();
+};
