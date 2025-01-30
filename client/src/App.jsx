@@ -1,7 +1,5 @@
 // imports
-import { useState, useEffect } from 'react';
 import './App.css'; // Ensure Tailwind and custom CSS are included
-import BASE_URL from './config';
 
 // components
 import Header from './components/Header';
@@ -10,262 +8,102 @@ import LoseModal from './components/LoseModal';
 import StatsModal from './components/StatsModal';
 import RulesModal from './components/RulesModal';
 
+// hooks
+import useFetchMovies from './hooks/useFetchMovies';
+import useFetchTodayMovie from './hooks/useFetchTodayMovie';
+import useGameState from './hooks/useGameState';
+import useLoadGame from './hooks/useLoadGame';
+import useSaveGameState from './hooks/useSaveGameState';
+
 function App() {
-	const [movie, setMovie] = useState(null);
-	const [error, setError] = useState(null);
-	const [answer, setAnswer] = useState('');
-	const [allMovies, setAllMovies] = useState([]);
-	const [filteredMovies, setFilteredMovies] = useState([]);
-	const [guesses, setGuesses] = useState(() => {
-		const savedState = JSON.parse(localStorage.getItem('gameState'));
-		return savedState?.guesses || 1;
+	// state
+	const {
+		answer,
+		setAnswer,
+		filteredMovies,
+		setFilteredMovies,
+		guesses,
+		setGuesses,
+		guessRows,
+		setGuessRows,
+		flipStatus,
+		setFlipStatus,
+		correctGuess,
+		setCorrectGuess,
+		outOfGuesses,
+		setOutOfGuesses,
+		guessBoxMessage,
+		setGuessBoxMessage,
+		isModalActive,
+		setIsModalActive,
+		isStreakModalActive,
+		setIsStreakModalActive,
+		streak,
+		setStreak,
+		bestStreak,
+		setBestStreak,
+		showCorrectModal,
+		setShowCorrectModal,
+		showOutOfGuessesModal,
+		setShowOutOfGuessesModal,
+		totalGames,
+		setTotalGames,
+		oneGuessWins,
+		setOneGuessWins,
+		twoGuessWins,
+		setTwoGuessWins,
+		threeGuessWins,
+		setThreeGuessWins,
+		fourGuessWins,
+		setFourGuessWins,
+		hintRevealed,
+		setHintRevealed,
+	} = useGameState();
+
+	// fetch today's movie
+	const {
+		movie,
+		correctMovieData,
+		error: todayMovieError,
+	} = useFetchTodayMovie();
+	if (todayMovieError) {
+		console.log("Error fetching today's movie:", todayMovieError);
+	}
+
+	// fetch all movies
+	const { allMovies, error: moviesError } = useFetchMovies();
+	if (moviesError) {
+		console.log('Error fetching movies:', moviesError);
+	}
+
+	// load game state
+	useLoadGame({
+		setGuesses,
+		setCorrectGuess,
+		setOutOfGuesses,
+		setGuessRows,
+		setGuessBoxMessage,
+		setStreak,
+		setTotalGames,
+		setOneGuessWins,
+		setTwoGuessWins,
+		setThreeGuessWins,
+		setFourGuessWins,
 	});
-	const [guessRows, setGuessRows] = useState(() => {
-		const savedState = JSON.parse(localStorage.getItem('gameState'));
-		return savedState?.guessRows || [null, null, null, null, null];
-	});
-	const [flipStatus, setFlipStatus] = useState({});
-	const [correctMovieData, setCorrectMovieData] = useState({
-		director: null,
-		genre_1: null,
-		genre_2: null,
-		actor: null,
-		release_date: null,
-		rating: null,
-		title: null,
-		poster_url: null,
-	});
-	const [correctGuess, setCorrectGuess] = useState(false);
-	const [outOfGuesses, setOutOfGuesses] = useState(false);
-	const [guessBoxMessage, setGuessBoxMessage] = useState("Guess Today's Movie");
-	const [isModalActive, setIsModalActive] = useState(false);
-	const [isStreakModalActive, setIsStreakModalActive] = useState(false);
-	const [streak, setStreak] = useState(() => {
-		const savedStreak = JSON.parse(localStorage.getItem('streakData'));
-		return savedStreak?.streak || 0;
-	});
-	const [bestStreak, setBestStreak] = useState(() => {
-		const savedStreak = JSON.parse(localStorage.getItem('streakData'));
-		return savedStreak?.bestStreak || 0;
-	});
-	const [showCorrectModal, setShowCorrectModal] = useState(false);
-	const [showOutOfGuessesModal, setShowOutOfGuessesModal] = useState(false);
-
-	// total games
-	const [totalGames, setTotalGames] = useState(() => {
-		const savedStats = JSON.parse(localStorage.getItem('stats'));
-		return savedStats?.total || 0;
-	});
-
-	// amount of guess wins
-	const [oneGuessWins, setOneGuessWins] = useState(() => {
-		const savedStats = JSON.parse(localStorage.getItem('stats'));
-		return savedStats?.oneGuess || 0;
-	});
-
-	const [twoGuessWins, setTwoGuessWins] = useState(() => {
-		const savedStats = JSON.parse(localStorage.getItem('stats'));
-		return savedStats?.twoGuess || 0;
-	});
-
-	const [threeGuessWins, setThreeGuessWins] = useState(() => {
-		const savedStats = JSON.parse(localStorage.getItem('stats'));
-		return savedStats?.threeGuess || 0;
-	});
-
-	const [fourGuessWins, setFourGuessWins] = useState(() => {
-		const savedStats = JSON.parse(localStorage.getItem('stats'));
-		return savedStats?.fourGuess || 0;
-	});
-
-	// hint
-	const [hintRevealed, setHintRevealed] = useState(false); // New state for hint visibility
-
-	// load game
-	useEffect(() => {
-		// grab dates
-		const todayDate = getMSTDateString();
-		const lastPlayDate = localStorage.getItem('lastPlayDate');
-
-		// check if its a new day
-		if (lastPlayDate !== todayDate) {
-			// reset streak data if it's a new day
-			const savedStreakData = JSON.parse(localStorage.getItem('streakData'));
-			const yesterday = getMSTDateStringYesterday();
-			if (savedStreakData) {
-				// if last play date isnt today or yesterday, reset streak
-				console.log('lastPlayDate:', lastPlayDate);
-				console.log('todayDate:', todayDate);
-				console.log('yesterday:', yesterday);
-				if (lastPlayDate !== todayDate && lastPlayDate !== yesterday) {
-					// set streak to 0
-					setStreak(0);
-					localStorage.setItem(
-						'streakData',
-						JSON.stringify({
-							streak: 0,
-							bestStreak: savedStreakData.bestStreak,
-							lastWinDate: savedStreakData.lastWinDate,
-						})
-					);
-				}
-			}
-
-			// clear daily game data (new day)
-			localStorage.removeItem('gameState');
-			setGuesses(1);
-			localStorage.removeItem('correctGuess');
-			setCorrectGuess(false);
-			localStorage.removeItem('outOfGuesses');
-			setOutOfGuesses(false);
-			setGuessRows([null, null, null, null]);
-
-			// set new game date
-			localStorage.setItem('lastPlayDate', todayDate);
-		} else {
-			// restore saved data for the current day
-			const savedCorrectGuess = JSON.parse(
-				localStorage.getItem('correctGuess')
-			);
-			if (savedCorrectGuess) {
-				setGuessBoxMessage('Correct! 🎉');
-				setCorrectGuess(true);
-			}
-			const savedOutOfGuesses = JSON.parse(
-				localStorage.getItem('outOfGuesses')
-			);
-			if (savedOutOfGuesses) {
-				setGuessBoxMessage('Out of guesses, try again tomorrow!');
-				setOutOfGuesses(true);
-			}
-		}
-
-		// restore stats
-		const savedStats = JSON.parse(localStorage.getItem('stats'));
-		if (savedStats) {
-			setTotalGames(savedStats.total || 0);
-			setOneGuessWins(savedStats.oneGuess || 0);
-			setTwoGuessWins(savedStats.twoGuess || 0);
-			setThreeGuessWins(savedStats.threeGuess || 0);
-			setFourGuessWins(savedStats.fourGuess || 0);
-		}
-
-		// fetch today's movie
-		fetch('http://localhost:5000/api/movie/today', {
-			//fetch(`${BASE_URL}/api/movie?endpoint=today`, {
-			method: 'GET',
-			headers: { 'Content-Type': 'application/json' },
-		})
-			.then((response) => response.json())
-			.then((data) => {
-				setMovie(data);
-				setCorrectMovieData({
-					actor: data.actor,
-					release_date: data.release_date,
-					genre_1: data.genre_1,
-					genre_2: data.genre_2,
-					rating: data.average_rating,
-					director: data.director,
-					title: data.name,
-					poster_url: data.poster_url,
-				});
-			})
-			.catch((error) => {
-				console.error("Error fetching today's movie:", error);
-				setError("Error fetching today's game");
-			});
-
-		// fetch all movies
-		fetch('http://localhost:5000/api/movie/', {
-			//fetch(`${BASE_URL}/api/movie`, {
-			method: 'GET',
-			headers: { 'Content-Type': 'application/json' },
-		})
-			.then((response) => response.json())
-			.then((data) => {
-				// Create a Set to store unique movie titles
-				const uniqueTitles = new Set();
-				const uniqueMovies = [];
-
-				data.forEach((movie) => {
-					if (!uniqueTitles.has(movie)) {
-						uniqueTitles.add(movie); // Add to Set for deduplication
-						uniqueMovies.push(movie); // Keep the original title
-					}
-				});
-
-				setAllMovies(uniqueMovies); // Set the deduplicated movie list
-			})
-			.catch((error) => console.error('Error fetching all movies:', error));
-	}, []);
 
 	// save game state
-	useEffect(() => {
-		// add a timeout to prevent the state from being updated too quickly
-		setTimeout(() => {
-			const gameState = {
-				guesses,
-				guessRows,
-				correctGuess,
-			};
-			localStorage.setItem('gameState', JSON.stringify(gameState));
-
-			const today = getMSTDateString();
-
-			// Fetch existing streak data
-			const streakData = JSON.parse(localStorage.getItem('streakData')) || {
-				streak: 0,
-				bestStreak: 0,
-				lastWinDate: null,
-			};
-
-			if (correctGuess && streakData.lastWinDate !== today) {
-				const yesterday = new Date();
-				yesterday.setDate(yesterday.getDate() - 1);
-				const yesterdayDate = yesterday.toISOString().split('T')[0];
-
-				let newStreak = 1;
-
-				// Increment streak if yesterday's win date matches
-				if (streakData.lastWinDate === yesterdayDate) {
-					newStreak = streakData.streak + 1;
-				}
-
-				// Update state and localStorage
-				setStreak(newStreak);
-				const updatedBestStreak = Math.max(newStreak, streakData.bestStreak);
-				setBestStreak(updatedBestStreak);
-
-				localStorage.setItem(
-					'streakData',
-					JSON.stringify({
-						streak: newStreak,
-						bestStreak: updatedBestStreak,
-						lastWinDate: today,
-					})
-				);
-
-				// Update stats
-				const stats = JSON.parse(localStorage.getItem('stats')) || null;
-				setTotalGames(stats.total);
-				setOneGuessWins(stats.oneGuess);
-				setTwoGuessWins(stats.twoGuess);
-				setThreeGuessWins(stats.threeGuess);
-				setFourGuessWins(stats.fourGuess);
-			} else if (!correctGuess && guesses === 4) {
-				// Reset streak on failure
-				setStreak(0);
-				localStorage.setItem(
-					'streakData',
-					JSON.stringify({
-						streak: 0,
-						bestStreak: streakData.bestStreak,
-						lastWinDate: null,
-					})
-				);
-			}
-		}, 500);
-	}, [guesses, guessRows, correctGuess, streak, bestStreak]);
+	useSaveGameState({
+		guesses,
+		guessRows,
+		correctGuess,
+		setStreak,
+		setBestStreak,
+		setTotalGames,
+		setOneGuessWins,
+		setTwoGuessWins,
+		setThreeGuessWins,
+		setFourGuessWins,
+	});
 
 	const getStarRating = (rating) => {
 		const fullStars = Math.floor(rating);
@@ -466,25 +304,6 @@ function App() {
 		setShowOutOfGuessesModal(false);
 	};
 
-	function getMSTDateString() {
-		const date = new Date();
-		const offsetMST = -7; // MST is UTC-7
-		date.setHours(date.getHours() + offsetMST); // Adjust by -7 hours
-
-		// Format to 'YYYY-MM-DD'
-		return date.toISOString().split('T')[0];
-	}
-
-	function getMSTDateStringYesterday() {
-		const date = new Date();
-		const offsetMST = -7; // MST is UTC-7
-		date.setHours(date.getHours() + offsetMST); // Adjust by -7 hours
-		date.setDate(date.getDate() - 1); // Get yesterday's date
-
-		// Format to 'YYYY-MM-DD'
-		return date.toISOString().split('T')[0];
-	}
-
 	const revealHint = () => {
 		setHintRevealed(true);
 	};
@@ -525,7 +344,7 @@ function App() {
 			<RulesModal isModalActive={isModalActive} toggleModal={toggleModal} />
 
 			<div className='max-w-3xl pl-10 pr-10 pt-4 pb-2 font-sans text-center bg-white rounded-lg shadow-md mt-8 mb-8 min-w-[360px]'>
-				{error && <p className='text-red-500'>{error}</p>}
+				{todayMovieError && <p className='text-red-500'>{todayMovieError}</p>}
 				{movie ? (
 					<div>
 						<span className='font-medium'>
