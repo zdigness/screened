@@ -18,7 +18,7 @@ function Header({
 				<div className='w-full text-center flex flex-col items-center'>
 					<div className='flex justify-center items-center gap-2 mb-4'>
 						<button
-							className='w-fit h-fit inline-flex items-center justify-center bg-transparent rounded-full hover:bg-gray-200 p-2 transition hover:outline-none'
+							className='w-fit h-fit inline-flex items-center justify-center bg-transparent rounded-full hover:bg-gray-200 p-2 transition hover:shadow-md focus:outline-none focus:ring-0'
 							onClick={toggleModal}
 							aria-label='Information about the game'
 						>
@@ -27,11 +27,12 @@ function Header({
 								height='36'
 								src='https://img.icons8.com/ios/100/help--v1.png'
 								alt='help--v1'
+								className='pointer-events-none'
 							/>
 						</button>
 
 						<button
-							className='w-fit h-fit inline-flex items-center justify-center bg-transparent rounded-full hover:bg-gray-200 p-2 transition'
+							className='w-fit h-fit inline-flex items-center justify-center bg-transparent rounded-full hover:bg-gray-200 p-1 pr-2 pl-2 transition hover:shadow-md'
 							onClick={toggleStreakModal}
 							aria-label='Streak Counter'
 						>
@@ -40,11 +41,12 @@ function Header({
 								height='36'
 								src='https://img.icons8.com/pastel-glyph/100/bar-chart--v2.png'
 								alt='bar-chart--v2'
+								className='pointer-events-none mb-2'
 							/>
 						</button>
 
 						<button
-							className='w-fit h-fit inline-flex items-center justify-center bg-transparent rounded-full hover:bg-gray-200 p-2 transition'
+							className='w-fit h-fit inline-flex items-center justify-center bg-transparent rounded-full hover:bg-gray-200 p-2 transition hover:shadow-md'
 							aria-label='Settings'
 						>
 							<img
