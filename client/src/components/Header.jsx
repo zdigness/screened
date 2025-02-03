@@ -1,19 +1,37 @@
 import PropTypes from 'prop-types';
+import Button from '@mui/material/Button';
 
 function Header({
 	toggleModal,
 	toggleStreakModal,
+	toggleSettingsModal,
+	toggleArchiveModal,
 	revealHint,
 	correctMovieData,
 	hintRevealed,
 }) {
 	return (
 		<div className=' w-full text-center flex justify-center items-center min-w-96 mr-4'>
-			<div className=''>
-				<h1 className='lg:text-2xl text-2xl font-light text-black mb-4 ml-10 mr-10 text-center border-2 border-black rounded-full pt-2 pb-2 pr-5 pl-5'>
+			<div className='flex justify-center items-center p-10 mb-2'>
+				<Button
+					variant='contained'
+					sx={{
+						backgroundColor: '#ffffff',
+						color: '#000000',
+						border: '1px solid #000000',
+						boxShadow: 'none',
+						'&:hover': { backgroundColor: '#DFDFDF' },
+						padding: '15px', // Increased padding for a bigger button
+						fontSize: '1.25rem', // Larger text size
+						minWidth: '150px', // Ensures the button is wider
+						borderRadius: '100px', // Optional: rounded edges
+					}}
+					onClick={toggleArchiveModal}
+				>
 					Archive
-				</h1>
+				</Button>
 			</div>
+
 			<div className='flex flex-col items-center justify-center '>
 				<div className='w-full text-center flex flex-col items-center'>
 					<div className='flex justify-center items-center gap-2 mb-4'>
@@ -47,6 +65,7 @@ function Header({
 
 						<button
 							className='w-fit h-fit inline-flex items-center justify-center bg-transparent rounded-full hover:bg-gray-200 p-2 transition hover:shadow-md'
+							onClick={toggleSettingsModal}
 							aria-label='Settings'
 						>
 							<img
@@ -84,6 +103,8 @@ Header.propTypes = {
 	revealHint: PropTypes.func.isRequired,
 	correctMovieData: PropTypes.object.isRequired,
 	hintRevealed: PropTypes.bool.isRequired,
+	toggleSettingsModal: PropTypes.func.isRequired,
+	toggleArchiveModal: PropTypes.func.isRequired,
 };
 
 export default Header;

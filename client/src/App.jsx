@@ -7,6 +7,8 @@ import CorrectGuessModal from './components/CorrectGuessModal';
 import LoseModal from './components/LoseModal';
 import StatsModal from './components/StatsModal';
 import RulesModal from './components/RulesModal';
+import SettingsModal from './components/SettingsModal';
+import ArchiveModal from './components/ArchiveModal';
 import Review from './components/Review';
 import MovieGuessInput from './components/MovieInput';
 import GuessLabels from './components/GuessLabels';
@@ -69,6 +71,10 @@ function App() {
 		setFourGuessWins,
 		hintRevealed,
 		setHintRevealed,
+		isSettingsModalActive,
+		setIsSettingsModalActive,
+		isArchiveModalActive,
+		setIsArchiveModalActive,
 	} = useGameState();
 
 	// fetch today's movie
@@ -125,6 +131,14 @@ function App() {
 		setIsStreakModalActive(!isStreakModalActive);
 	};
 
+	const toggleSettingsModal = () => {
+		setIsSettingsModalActive(!isSettingsModalActive);
+	};
+
+	const toggleArchiveModal = () => {
+		setIsArchiveModalActive(!isArchiveModalActive);
+	};
+
 	const closeCorrectModal = () => {
 		setShowCorrectModal(false);
 	};
@@ -146,6 +160,8 @@ function App() {
 				revealHint={revealHint}
 				correctMovieData={correctMovieData}
 				hintRevealed={hintRevealed}
+				toggleSettingsModal={toggleSettingsModal}
+				toggleArchiveModal={toggleArchiveModal}
 			/>
 
 			{/* Modals */}
@@ -172,6 +188,14 @@ function App() {
 				bestStreak={bestStreak}
 			/>
 			<RulesModal isModalActive={isModalActive} toggleModal={toggleModal} />
+			<SettingsModal
+				isModalActive={isSettingsModalActive}
+				toggleModal={toggleSettingsModal}
+			/>
+			<ArchiveModal
+				isModalActive={isArchiveModalActive}
+				toggleModal={toggleArchiveModal}
+			/>
 
 			{/* Review */}
 			<Review movie={movie} todayMovieError={todayMovieError} />

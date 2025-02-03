@@ -17,6 +17,7 @@ function useGameState() {
 	const [guessBoxMessage, setGuessBoxMessage] = useState("Guess Today's Movie");
 	const [isModalActive, setIsModalActive] = useState(false);
 	const [isStreakModalActive, setIsStreakModalActive] = useState(false);
+	const [isSettingsModalActive, setIsSettingsModalActive] = useState(false);
 	const [streak, setStreak] = useState(() => {
 		const savedStreak = JSON.parse(localStorage.getItem('streakData'));
 		return savedStreak?.streak || 0;
@@ -57,6 +58,9 @@ function useGameState() {
 
 	// hint
 	const [hintRevealed, setHintRevealed] = useState(false); // New state for hint visibility
+
+	// modals
+	const [isArchiveModalActive, setIsArchiveModalActive] = useState(false);
 
 	return {
 		answer,
@@ -99,6 +103,10 @@ function useGameState() {
 		setFourGuessWins,
 		hintRevealed,
 		setHintRevealed,
+		isSettingsModalActive,
+		setIsSettingsModalActive,
+		isArchiveModalActive,
+		setIsArchiveModalActive,
 	};
 }
 
