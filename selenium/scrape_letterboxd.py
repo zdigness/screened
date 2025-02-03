@@ -14,8 +14,14 @@ driver = webdriver.Chrome(
     service=Service(ChromeDriverManager().install()), options=options
 )
 
+# page to scrape
+page = 3
+
+# csv for page
+csv_file = f"popular_films_{page}.csv"
+
 # Read the CSV file into a DataFrame
-movies_df = pd.read_csv("server/config/init/popular_films.csv")
+movies_df = pd.read_csv(csv_file)
 # Convert the DataFrame into a list of dictionaries
 movies = movies_df.to_dict(orient="records")
 
@@ -202,11 +208,12 @@ for index, movie in enumerate(movies):
     release_date = start_date + timedelta(days=index)  # Increment date for each movie
     scrape_movie(movie, release_date)
 
-# Save the data to a CSV file
+# Save the data to a CSV file for that page
 df = pd.DataFrame(movie_data)
-df.to_csv("server/config/init/movies_data.csv", index=False)
+df.to_csv(f"movies_data_{page}.csv", index=False)
 
 # Close the browser
 driver.quit()
 
-print("Scraping completed. Data saved to movies_data.csv.")
+# Print a message to indicate that the script has finished
+print(f"Data has been scraped and saved to movies_data_{page}.csv.")

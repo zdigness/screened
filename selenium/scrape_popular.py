@@ -15,8 +15,16 @@ driver = webdriver.Chrome(
     service=Service(ChromeDriverManager().install()), options=options
 )
 
-# Open the Letterboxd popular films page
-url = "https://letterboxd.com/films/popular/page/3/"
+# page to scrape
+page = 3
+
+# url for the page to scrape
+url = f"https://letterboxd.com/films/popular/page/{page}/"
+
+# csv file to save the data for speficied page
+csv_file = f"popular_films_{page}.csv"
+
+# get page
 driver.get(url)
 
 # Wait for the page to load
@@ -43,9 +51,6 @@ try:
 
     # Convert new films to a DataFrame
     new_data = pd.DataFrame(films)
-
-    # Path to the CSV file
-    csv_file = "server/config/init/popular_films.csv"
 
     if os.path.exists(csv_file):
         # If the file exists, read the existing data
